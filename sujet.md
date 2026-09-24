@@ -213,6 +213,60 @@ Exemple :
 
 CLIENT 1 ───── N COMMANDE
 
+### Entités
+
+Le JSON d'une fiche film (`/movie/{id}?append_to_response=credits`) est un objet central, le film, qui contient des objets et des listes d'objets imbriqués. Chaque objet imbriqué qui possède **son propre identifiant TMDB** et qui **se répète d'un film à l'autre** devient une entité à part. On évite ainsi de stocker « Marvel Studios » ou « Science-Fiction » à chaque film.
+
+| Entité | Origine dans le JSON | Identifiant | Attributs principaux | Justification |
+|---|---|---|---|---|
+| **FILM** | racine | `id` | titre, titre original, synopsis, date de sortie, durée, budget, recettes, note moyenne, nombre de votes | Objet central de la source : toutes les autres données s'y rattachent |
+| **GENRE** | `genres[]` | `id` | nom | Liste fermée (≈ 19 genres) partagée par tous les films |
+| **SAGA** | `belongs_to_collection` | `id` | nom, affiche | Regroupe plusieurs films (ex. *Spider-Man (MCU)*) et possède ses propres visuels |
+| **SOCIÉTÉ DE PRODUCTION** | `production_companies[]` | `id` | nom, pays d'origine, logo | Une même société produit de nombreux films |
+| **PAYS** | `production_countries[]` | code ISO 3166-1 | nom | Référentiel normalisé : le code ISO sert directement d'identifiant |
+| **LANGUE** | `spoken_languages[]` | code ISO 639-1 | nom local, nom anglais | Référentiel normalisé : le code ISO sert directement d'identifiant |
+| **PERSONNE** | `credits.cast[]` et `credits.crew[]` | `id` | nom, genre, métier principal, popularité | Une personne apparaît dans plusieurs films et peut y être à la fois acteur et technicien (ex. un réalisateur qui joue un caméo). On garde donc **une seule** entité au lieu de séparer ACTEUR et TECHNICIEN |
+
+Le détail de chaque attribut (type, exemple) est donné dans le dictionnaire de données (section 3).
+
+### Relations et cardinalités
+
+Les cardinalités sont notées `(min,max)` du côté de chaque entité. Par exemple, `FILM (0,1)` signifie qu'un film participe à la relation au minimum 0 fois et au maximum 1 fois.
+
+| Relation | Entité A | Card. A | Entité B | Card. B | Type | Justification |
+|---|---|---|---|---|---|---|
+| **APPARTENIR** | FILM | (0,1) | SAGA | (1,N) | 1-N | `belongs_to_collection` est un objet unique ou `null` : un film appartient au plus à une saga. Une saga contient au moins un film |
+| **ÊTRE CLASSÉ** | FILM | (0,N) | GENRE | (0,N) | N-N | `genres` est une liste : un film a plusieurs genres (Action, Science-Fiction…). Un genre regroupe de nombreux films. TMDB renvoie parfois une liste vide |
+| **PRODUIRE** | FILM | (0,N) | SOCIÉTÉ | (1,N) | N-N | Un film est souvent coproduit par plusieurs sociétés, et une société produit plusieurs films |
+| **ÊTRE PRODUIT DANS** | FILM | (0,N) | PAYS | (1,N) | N-N | Un film peut être une coproduction internationale (ex. US + DE) |
+| **ÊTRE PARLÉ DANS** | FILM | (0,N) | LANGUE | (1,N) | N-N | Un film peut contenir plusieurs langues parlées |
+| **JOUER** *(casting)* | FILM | (0,N) | PERSONNE | (0,N) | N-N porteuse | La relation porte ses propres attributs : **personnage** et **rang au générique**. Elle a son propre identifiant (`credit_id`) |
+| **TRAVAILLER SUR** *(équipe)* | FILM | (0,N) | PERSONNE | (0,N) | N-N porteuse | Attributs portés : **département** et **poste**. Une personne peut avoir plusieurs postes sur un même film (ex. Christopher Nolan est *Director*, *Writer* et *Producer* sur *Inception*). C'est pourquoi l'identifiant est `credit_id` et non le couple (film, personne) |
+
+Les minimums à 1 côté référentiel (SAGA, SOCIÉTÉ, PAYS, LANGUE) viennent du mode d'alimentation : ces lignes ne sont créées qu'à partir de la fiche d'un film, donc elles sont toujours reliées à au moins un film. Côté PERSONNE, le minimum est à 0 dans chacune des deux relations, car une personne peut n'être qu'actrice ou que technicienne.
+
+### Vue d'ensemble
+
+```
+SAGA     1 ───── N FILM
+FILM     N ───── N GENRE
+FILM     N ───── N SOCIÉTÉ DE PRODUCTION
+FILM     N ───── N PAYS
+FILM     N ───── N LANGUE
+FILM     N ─(JOUER : personnage, rang)────────────── N PERSONNE
+FILM     N ─(TRAVAILLER SUR : département, poste)─── N PERSONNE
+```
+
+### Choix de modélisation
+
+- **Réutilisation des identifiants TMDB** au lieu de clés générées (`SERIAL`) : un film réimporté met à jour sa ligne existante au lieu d'en créer une nouvelle (UPSERT).
+- **Relations N-N → tables de liaison** : `movie_genres`, `movie_production_companies`, `movie_production_countries` et `movie_spoken_languages`. Leur clé primaire est composée des deux clés étrangères, ce qui empêche un doublon film/genre.
+- **Relations porteuses → tables à part entière** : `movie_cast` et `movie_crew`. Elles ont leurs propres attributs, et leur clé primaire est l'identifiant de crédit TMDB.
+- **Casting et équipe séparés** plutôt qu'une seule table `credits` avec un type : leurs attributs sont différents (personnage/rang d'un côté, département/poste de l'autre). Une table unique aurait laissé la moitié des colonnes vides.
+- **Attributs volontairement non reliés** :
+  - `movies.original_language` et `production_companies.origin_country` restent de simples codes, sans clé étrangère.
+  - Les tables `languages` et `countries` ne sont remplies qu'à partir des langues parlées et des pays de production. Une clé étrangère ferait échouer l'import quand le code n'y figure pas encore.
+
 ---
 ## 5. Réaliser les modèles
 
