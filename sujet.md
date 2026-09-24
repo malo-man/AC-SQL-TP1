@@ -280,6 +280,8 @@ Représentez :
 - Relations
 - Cardinalités
 
+![Diagramme du modèle conceptuel](/images/diagram_mcd.png)
+
 Modèle logique
 
 Transformez le modèle conceptuel en :
@@ -289,6 +291,8 @@ Transformez le modèle conceptuel en :
 - Clés primaires
 - Clés étrangères
 - Relations
+
+![Diagramme du modèle logique](/images/diagram_mld.png)
 
 ---
 ## 6. Implémenter le modèle dans PostgreSQL
