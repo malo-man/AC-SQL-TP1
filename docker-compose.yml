@@ -1,4 +1,13 @@
+# Plateforme Data du TP2 : collecte -> Kafka -> Data Lake -> PySpark -> PostgreSQL -> Data Viz,
+# le tout supervisé par Prometheus et Grafana. Tout démarre avec "docker compose up -d".
+# Les ports ne sont publiés que sur 127.0.0.1 : rien n'est exposé sur le réseau local.
+
 services:
+
+  # ===================================================================
+  # Stockage
+  # ===================================================================
+
   postgres:
     image: postgres:17
     container_name: tmdb_postgres
@@ -19,6 +28,67 @@ services:
       timeout: 5s
       retries: 10
 
+  # ===================================================================
+  # Transport — Kafka en mode KRaft (ni ZooKeeper, ni Schema Registry)
+  # ===================================================================
+
+  kafka:
+    image: apache/kafka:4.1.0
+    container_name: tmdb_kafka
+    restart: unless-stopped
+    environment:
+      # Noeud unique : il est à la fois broker et controller
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID:-RJnINqC3SNigDRwEGFXbfw}
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      # Nom résolvable depuis les autres conteneurs : le port n'est pas publié sur l'hôte
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      # Un seul broker : tous les facteurs de réplication tombent à 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_SHARE_COORDINATOR_STATE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      # Un topic absent doit échouer bruyamment plutôt que d'être créé à la volée
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_HEAP_OPTS: ${KAFKA_HEAP_OPTS:--Xmx512m -Xms256m}
+    volumes:
+      # /var/lib/kafka/data appartient à l'uid 1000 dans l'image : le volume hérite des droits
+      - kafkadata:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # Crée le topic puis s'arrête : rejoué (sans effet) à chaque démarrage
+  kafka-init:
+    image: apache/kafka:4.1.0
+    container_name: tmdb_kafka_init
+    restart: "no"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      KAFKA_BOOTSTRAP: kafka:9092
+      KAFKA_TOPIC: ${KAFKA_TOPIC:-tmdb.movies.raw}
+      KAFKA_TOPIC_PARTITIONS: ${KAFKA_TOPIC_PARTITIONS:-1}
+      KAFKA_TOPIC_RETENTION_MS: ${KAFKA_TOPIC_RETENTION_MS:-604800000}
+    volumes:
+      - ./kafka/create-topics.sh:/create-topics.sh:ro
+    command: ["/bin/sh", "/create-topics.sh"]
+
+  # ===================================================================
+  # Collecte
+  # ===================================================================
+
   # Source 2 : datasets publics IMDb déposés tels quels dans datalake/raw/imdb
   imdb-fetcher:
     build: ./source2
@@ -26,7 +96,7 @@ services:
     restart: unless-stopped
     environment:
       DATALAKE_DIR: /datalake
-      IMDB_DATASETS: ${IMDB_DATASETS:-title.ratings,title.basics}
+      IMDB_DATASETS: ${IMDB_DATASETS:-title.ratings}
       IMDB_FETCH_INTERVAL_HOURS: ${IMDB_FETCH_INTERVAL_HOURS:-24}
       METRICS_PORT: 8000
     ports:
@@ -38,3 +108,6 @@ volumes:
   pgdata:
   # Data Lake partagé entre la collecte et Spark
   datalake:
+  # Journaux Kafka : le lac reste la source de vérité, mais le broker doit
+  # survivre à un redémarrage sans perdre les messages non encore consommés
+  kafkadata:
