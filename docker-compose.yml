@@ -28,6 +28,28 @@ services:
       timeout: 5s
       retries: 10
 
+  # Applique la DDL du schéma mart puis s'arrête. Rejoué à chaque démarrage :
+  # indispensable car les scripts de db/init ne s'exécutent que sur un volume
+  # vierge, et le volume pgdata existe depuis le TP1.
+  db-migrate:
+    image: postgres:17
+    container_name: tmdb_db_migrate
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-tmdb}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-tmdb}
+      PGDATABASE: ${POSTGRES_DB:-tmdb}
+    volumes:
+      - ./db/migrations:/migrations:ro
+    command:
+      - /bin/sh
+      - -c
+      - 'set -e; for f in /migrations/*.sql; do echo "== $$f"; psql -v ON_ERROR_STOP=1 -f "$$f"; done; echo "migrations appliquées"'
+
   # ===================================================================
   # Transport — Kafka en mode KRaft (ni ZooKeeper, ni Schema Registry)
   # ===================================================================
