@@ -22,26 +22,31 @@ from pathlib import Path
 import httpx
 from prometheus_client import Counter, Gauge, start_http_server
 
+JOB = "imdb-fetcher"
+SOURCE = "imdb"
 BASE_URL = "https://datasets.imdbws.com"
 CHUNK_SIZE = 1024 * 1024
 RETRY_DELAY_SECONDS = 15 * 60
 
-log = logging.getLogger("imdb_fetcher")
+log = logging.getLogger(JOB)
 
+# Nommage commun à tous les services du pipeline : c'est ce qui permet de
+# comparer les deux sources dans un même graphique. Le volume présent dans le
+# lac n'est pas publié ici mais par datalake-exporter, qui mesure le lac
+# lui-même plutôt que ce que ce processus a écrit depuis son démarrage.
 FILES_DOWNLOADED = Counter(
-    "imdb_files_downloaded_total", "Fichiers IMDb téléchargés dans le Data Lake", ["dataset"]
+    "pipeline_source_files_downloaded_total",
+    "Fichiers téléchargés depuis la source",
+    ["source", "dataset"],
 )
 BYTES_DOWNLOADED = Counter(
-    "imdb_bytes_downloaded_total", "Octets IMDb téléchargés dans le Data Lake", ["dataset"]
+    "pipeline_source_bytes_downloaded_total",
+    "Octets téléchargés depuis la source",
+    ["source", "dataset"],
 )
-FETCH_ERRORS = Counter("imdb_fetch_errors_total", "Échecs de téléchargement IMDb", ["dataset"])
-RAW_ROWS = Gauge(
-    "imdb_raw_rows", "Nombre de lignes (hors en-tête) du dernier fichier brut", ["dataset"]
-)
+ERRORS = Counter("pipeline_errors_total", "Erreurs rencontrées par le service", ["job"])
 LAST_SUCCESS = Gauge(
-    "imdb_last_success_timestamp_seconds",
-    "Horodatage du dernier fichier brut disponible",
-    ["dataset"],
+    "pipeline_last_success_timestamp_seconds", "Horodatage du dernier succès", ["job"]
 )
 
 
@@ -56,7 +61,8 @@ class Settings:
 def load_settings() -> Settings:
     """Lit la configuration depuis les variables d'environnement."""
     datalake_dir = Path(os.getenv("DATALAKE_DIR", "/datalake"))
-    datasets = os.getenv("IMDB_DATASETS", "title.ratings,title.basics")
+    # Profil léger par défaut : title.ratings (9 Mo) porte l'enrichissement métier
+    datasets = os.getenv("IMDB_DATASETS", "title.ratings")
     return Settings(
         raw_dir=datalake_dir / "raw" / "imdb",
         datasets=[d.strip() for d in datasets.split(",") if d.strip()],
@@ -72,9 +78,8 @@ def count_rows(path: Path) -> int:
 
 
 def publish_metrics(dataset: str, manifest: dict) -> None:
-    """Expose dans Prometheus l'état du dernier fichier brut."""
-    RAW_ROWS.labels(dataset).set(manifest["rows"])
-    LAST_SUCCESS.labels(dataset).set(datetime.fromisoformat(manifest["fetched_at"]).timestamp())
+    """Expose dans Prometheus la date du dernier fichier brut disponible."""
+    LAST_SUCCESS.labels(JOB).set(datetime.fromisoformat(manifest["fetched_at"]).timestamp())
 
 
 def fetch_dataset(client: httpx.Client, dataset: str, raw_dir: Path) -> None:
@@ -110,7 +115,7 @@ def fetch_dataset(client: httpx.Client, dataset: str, raw_dir: Path) -> None:
         tmp.unlink(missing_ok=True)
 
     manifest = {
-        "source": "imdb",
+        "source": SOURCE,
         "dataset": dataset,
         "url": f"{BASE_URL}/{dataset}.tsv.gz",
         "fetched_at": fetched_at.isoformat(),
@@ -123,8 +128,8 @@ def fetch_dataset(client: httpx.Client, dataset: str, raw_dir: Path) -> None:
     }
     manifest_path.write_text(json.dumps(manifest, indent=2))
 
-    FILES_DOWNLOADED.labels(dataset).inc()
-    BYTES_DOWNLOADED.labels(dataset).inc(size)
+    FILES_DOWNLOADED.labels(SOURCE, dataset).inc()
+    BYTES_DOWNLOADED.labels(SOURCE, dataset).inc(size)
     publish_metrics(dataset, manifest)
     log.info("%s téléchargé : %d lignes, %.1f Mo -> %s", dataset, rows, size / 1e6, target)
 
@@ -137,7 +142,7 @@ def run_once(client: httpx.Client, settings: Settings) -> bool:
             fetch_dataset(client, dataset, settings.raw_dir)
         except (httpx.HTTPError, OSError):
             log.exception("Échec du téléchargement de %s", dataset)
-            FETCH_ERRORS.labels(dataset).inc()
+            ERRORS.labels(JOB).inc()
             ok = False
     return ok
 

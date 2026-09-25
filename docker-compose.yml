@@ -179,6 +179,26 @@ services:
       - datalake:/datalake
 
   # ===================================================================
+  # Observabilité
+  # ===================================================================
+
+  # Mesure le contenu réel du Data Lake : c'est le côté « Raw » de
+  # l'indicateur Raw vs Clean, le côté « Clean » venant de PostgreSQL.
+  datalake-exporter:
+    build: ./monitoring
+    container_name: tmdb_datalake_exporter
+    restart: unless-stopped
+    environment:
+      DATALAKE_DIR: /datalake
+      EXPORTER_INTERVAL_SECONDS: ${EXPORTER_INTERVAL_SECONDS:-30}
+      METRICS_PORT: 8000
+    ports:
+      - "127.0.0.1:${DATALAKE_EXPORTER_PORT:-9104}:8000"
+    volumes:
+      # Lecture seule : ce service observe le lac, il n'y écrit jamais
+      - datalake:/datalake:ro
+
+  # ===================================================================
   # Traitement — PySpark
   # ===================================================================
 
