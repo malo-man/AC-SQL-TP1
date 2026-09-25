@@ -178,6 +178,36 @@ services:
     volumes:
       - datalake:/datalake
 
+  # ===================================================================
+  # Traitement — PySpark
+  # ===================================================================
+
+  # Agrégation puis chargement, relancés en boucle. Les deux jobs sortent
+  # proprement quand le lac est encore vide : le service ne boucle donc pas en
+  # erreur pendant les premières minutes suivant un "up".
+  spark-jobs:
+    build: ./spark
+    container_name: tmdb_spark_jobs
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
+    environment:
+      DATALAKE_DIR: /datalake
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-tmdb}
+      POSTGRES_USER: ${POSTGRES_USER:-tmdb}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tmdb}
+      SPARK_INTERVAL_MINUTES: ${SPARK_INTERVAL_MINUTES:-5}
+      SPARK_DRIVER_MEMORY: ${SPARK_DRIVER_MEMORY:-2g}
+      SPARK_SHUFFLE_PARTITIONS: ${SPARK_SHUFFLE_PARTITIONS:-8}
+    volumes:
+      # Lecture des zones brutes et écriture de la zone agrégée
+      - datalake:/datalake
+
 volumes:
   pgdata:
   # Data Lake partagé entre la collecte et Spark

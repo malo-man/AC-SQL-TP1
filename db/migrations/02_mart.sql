@@ -182,25 +182,46 @@ CREATE INDEX IF NOT EXISTS idx_mart_load_runs_job ON mart.load_runs (job, starte
 -- ---------------------------------------------------------------------
 -- Tables de transit alimentées par Spark.
 --
--- Spark écrit dedans en mode overwrite + truncate : la table est vidée,
--- jamais supprimée, ce qui préserve les types définis ici. L'UPSERT vers
--- la table cible est ensuite fait en SQL, ce qui conserve clés, index et
--- contraintes (un write.jdbc en overwrite les détruirait).
+-- Spark y écrit en mode overwrite + truncate : la table est vidée, jamais
+-- supprimée, ce qui préserve les types définis ici. L'UPSERT vers la table
+-- cible est ensuite fait en SQL, ce qui conserve clés, index et contraintes
+-- (un write.jdbc en overwrite les détruirait).
+--
+-- Elles sont recréées à chaque migration, et non créées « si absentes » :
+-- elles ne contiennent rien de durable, et ainsi leur structure suit
+-- automatiquement toute évolution des tables cibles.
+--
+-- INCLUDING DEFAULTS est indispensable : LIKE copie la contrainte NOT NULL de
+-- loaded_at mais pas sa valeur par défaut, et Spark, qui n'écrit pas cette
+-- colonne, se ferait refuser l'insertion.
 -- ---------------------------------------------------------------------
 
-CREATE UNLOGGED TABLE IF NOT EXISTS mart._stg_genres                     (LIKE mart.genres);
-CREATE UNLOGGED TABLE IF NOT EXISTS mart._stg_collections                (LIKE mart.collections);
-CREATE UNLOGGED TABLE IF NOT EXISTS mart._stg_production_companies       (LIKE mart.production_companies);
-CREATE UNLOGGED TABLE IF NOT EXISTS mart._stg_countries                  (LIKE mart.countries);
-CREATE UNLOGGED TABLE IF NOT EXISTS mart._stg_languages                  (LIKE mart.languages);
-CREATE UNLOGGED TABLE IF NOT EXISTS mart._stg_people                     (LIKE mart.people);
-CREATE UNLOGGED TABLE IF NOT EXISTS mart._stg_movies                     (LIKE mart.movies);
-CREATE UNLOGGED TABLE IF NOT EXISTS mart._stg_movie_genres               (LIKE mart.movie_genres);
-CREATE UNLOGGED TABLE IF NOT EXISTS mart._stg_movie_production_companies (LIKE mart.movie_production_companies);
-CREATE UNLOGGED TABLE IF NOT EXISTS mart._stg_movie_production_countries (LIKE mart.movie_production_countries);
-CREATE UNLOGGED TABLE IF NOT EXISTS mart._stg_movie_spoken_languages     (LIKE mart.movie_spoken_languages);
-CREATE UNLOGGED TABLE IF NOT EXISTS mart._stg_movie_cast                 (LIKE mart.movie_cast);
-CREATE UNLOGGED TABLE IF NOT EXISTS mart._stg_movie_crew                 (LIKE mart.movie_crew);
+DROP TABLE IF EXISTS mart._stg_genres;                    
+CREATE UNLOGGED TABLE mart._stg_genres                     (LIKE mart.genres INCLUDING DEFAULTS);
+DROP TABLE IF EXISTS mart._stg_collections;               
+CREATE UNLOGGED TABLE mart._stg_collections                (LIKE mart.collections INCLUDING DEFAULTS);
+DROP TABLE IF EXISTS mart._stg_production_companies;      
+CREATE UNLOGGED TABLE mart._stg_production_companies       (LIKE mart.production_companies INCLUDING DEFAULTS);
+DROP TABLE IF EXISTS mart._stg_countries;                 
+CREATE UNLOGGED TABLE mart._stg_countries                  (LIKE mart.countries INCLUDING DEFAULTS);
+DROP TABLE IF EXISTS mart._stg_languages;                 
+CREATE UNLOGGED TABLE mart._stg_languages                  (LIKE mart.languages INCLUDING DEFAULTS);
+DROP TABLE IF EXISTS mart._stg_people;                    
+CREATE UNLOGGED TABLE mart._stg_people                     (LIKE mart.people INCLUDING DEFAULTS);
+DROP TABLE IF EXISTS mart._stg_movies;                    
+CREATE UNLOGGED TABLE mart._stg_movies                     (LIKE mart.movies INCLUDING DEFAULTS);
+DROP TABLE IF EXISTS mart._stg_movie_genres;              
+CREATE UNLOGGED TABLE mart._stg_movie_genres               (LIKE mart.movie_genres INCLUDING DEFAULTS);
+DROP TABLE IF EXISTS mart._stg_movie_production_companies;
+CREATE UNLOGGED TABLE mart._stg_movie_production_companies (LIKE mart.movie_production_companies INCLUDING DEFAULTS);
+DROP TABLE IF EXISTS mart._stg_movie_production_countries;
+CREATE UNLOGGED TABLE mart._stg_movie_production_countries (LIKE mart.movie_production_countries INCLUDING DEFAULTS);
+DROP TABLE IF EXISTS mart._stg_movie_spoken_languages;    
+CREATE UNLOGGED TABLE mart._stg_movie_spoken_languages     (LIKE mart.movie_spoken_languages INCLUDING DEFAULTS);
+DROP TABLE IF EXISTS mart._stg_movie_cast;                
+CREATE UNLOGGED TABLE mart._stg_movie_cast                 (LIKE mart.movie_cast INCLUDING DEFAULTS);
+DROP TABLE IF EXISTS mart._stg_movie_crew;                
+CREATE UNLOGGED TABLE mart._stg_movie_crew                 (LIKE mart.movie_crew INCLUDING DEFAULTS);
 
 COMMENT ON SCHEMA mart IS 'Données propres produites par le pipeline PySpark (TP2)';
 COMMENT ON TABLE  mart.movies IS 'Films TMDB nettoyés et enrichis des notes IMDb';

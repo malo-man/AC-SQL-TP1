@@ -22,7 +22,7 @@ ADD https://repo1.maven.org/maven2/org/postgresql/postgresql/42.7.4/postgresql-4
     /opt/jars/postgresql.jar
 RUN chmod 644 /opt/jars/postgresql.jar
 
-COPY *.py ./
+COPY *.py run_jobs.sh ./
 
 ENV PYTHONUNBUFFERED=1
-CMD ["python", "aggregate.py"]
+CMD ["/bin/sh", "/app/run_jobs.sh"]
