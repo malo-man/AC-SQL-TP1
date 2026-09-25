@@ -198,6 +198,73 @@ services:
       # Lecture seule : ce service observe le lac, il n'y écrit jamais
       - datalake:/datalake:ro
 
+  # État, CPU et mémoire de chaque conteneur
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: tmdb_cadvisor
+    restart: unless-stopped
+    # Accès aux cgroups et au démon Docker de l'hôte : c'est ce qui permet de
+    # voir l'état des conteneurs depuis un conteneur.
+    privileged: true
+    devices:
+      - /dev/kmsg
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    command:
+      - --docker_only=true
+      - --housekeeping_interval=10s
+    ports:
+      - "127.0.0.1:${CADVISOR_PORT:-8081}:8080"
+
+  # Ressources de la machine hôte
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:v1.8.2
+    container_name: tmdb_node_exporter
+    restart: unless-stopped
+    pid: host
+    command:
+      - --path.rootfs=/host
+    volumes:
+      - /:/host:ro,rslave
+    ports:
+      - "127.0.0.1:${NODE_EXPORTER_PORT:-9100}:9100"
+
+  # Disponibilité et activité de PostgreSQL, plus le côté « Clean » de
+  # l'indicateur Raw vs Clean via des requêtes sur le schéma mart.
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: tmdb_postgres_exporter
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-tmdb}:${POSTGRES_PASSWORD:-tmdb}@postgres:5432/${POSTGRES_DB:-tmdb}?sslmode=disable"
+      PG_EXPORTER_EXTEND_QUERY_PATH: /etc/postgres_exporter/queries.yaml
+    volumes:
+      - ./monitoring/postgres_exporter/queries.yaml:/etc/postgres_exporter/queries.yaml:ro
+    ports:
+      - "127.0.0.1:${POSTGRES_EXPORTER_PORT:-9187}:9187"
+
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    container_name: tmdb_prometheus
+    restart: unless-stopped
+    volumes:
+      - ./monitoring/prometheus:/etc/prometheus:ro
+      - prometheusdata:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=${PROMETHEUS_RETENTION:-15d}
+      - --web.enable-lifecycle
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+
   # ===================================================================
   # Traitement — PySpark
   # ===================================================================
@@ -237,3 +304,5 @@ volumes:
   kafkadata:
   # Curseur du producer TMDB
   producer_state:
+  # Séries temporelles de supervision
+  prometheusdata:

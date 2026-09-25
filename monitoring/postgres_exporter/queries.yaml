@@ -1,0 +1,62 @@
+# Requêtes de supervision propres au pipeline, ajoutées aux métriques que
+# postgres-exporter collecte déjà (disponibilité, connexions, transactions...).
+#
+# Le nom d'une métrique est la concaténation de la clé et du nom de colonne :
+# "pipeline_clean" + "rows" donne pipeline_clean_rows.
+
+# Côté « Clean » de l'indicateur Raw vs Clean : ce qui est réellement en base.
+pipeline_clean:
+  query: 'SELECT table_name AS "table", row_count AS rows FROM mart.v_clean_counts'
+  master: true
+  metrics:
+    - table:
+        usage: "LABEL"
+        description: "Table du schéma mart"
+    - rows:
+        usage: "GAUGE"
+        description: "Lignes propres chargées dans PostgreSQL"
+
+# Bilan de la dernière exécution de chaque job Spark.
+# La colonne "job" est renommée : Prometheus réserve ce nom d'étiquette pour
+# la cible scrutée et renommerait la nôtre en exported_job.
+pipeline_load_run:
+  query: >
+    SELECT job AS pipeline_job,
+           coalesce(raw_rows_in, 0)::float        AS raw_rows_in,
+           coalesce(distinct_movies_in, 0)::float AS distinct_movies_in,
+           coalesce(clean_rows_out, 0)::float     AS clean_rows_out,
+           coalesce(rejected_rows, 0)::float      AS rejected_rows,
+           coalesce(imdb_matched, 0)::float       AS imdb_matched,
+           coalesce(duration_seconds, 0)::float   AS duration_seconds,
+           coalesce(extract(epoch FROM (now() - finished_at)), 0)::float AS age_seconds,
+           (status = 'success')::int::float       AS success
+    FROM mart.v_raw_vs_clean
+  master: true
+  metrics:
+    - pipeline_job:
+        usage: "LABEL"
+        description: "Job Spark : aggregate ou load_mart"
+    - raw_rows_in:
+        usage: "GAUGE"
+        description: "Lignes brutes lues par la dernière exécution"
+    - distinct_movies_in:
+        usage: "GAUGE"
+        description: "Films distincts après dédoublonnage"
+    - clean_rows_out:
+        usage: "GAUGE"
+        description: "Lignes propres produites par la dernière exécution"
+    - rejected_rows:
+        usage: "GAUGE"
+        description: "Lignes écartées faute d'identifiant ou de titre"
+    - imdb_matched:
+        usage: "GAUGE"
+        description: "Films rapprochés d'une note IMDb"
+    - duration_seconds:
+        usage: "GAUGE"
+        description: "Durée de la dernière exécution"
+    - age_seconds:
+        usage: "GAUGE"
+        description: "Temps écoulé depuis la fin de la dernière exécution"
+    - success:
+        usage: "GAUGE"
+        description: "1 si la dernière exécution a réussi"

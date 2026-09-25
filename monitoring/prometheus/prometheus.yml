@@ -1,0 +1,50 @@
+# Configuration Prometheus de la plateforme.
+# Une cible par service : "up" par job suffit alors à lire la disponibilité.
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    platform: tp2-tmdb
+
+scrape_configs:
+  # --- Prometheus lui-même ------------------------------------------------
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # --- Infrastructure -----------------------------------------------------
+  # État, CPU et mémoire de chaque conteneur
+  - job_name: cadvisor
+    static_configs:
+      - targets: ["cadvisor:8080"]
+
+  # Ressources de la machine hôte
+  - job_name: node-exporter
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  # --- PostgreSQL ---------------------------------------------------------
+  # Disponibilité et activité de la base, plus les requêtes de supervision du
+  # pipeline (mart.v_clean_counts et mart.v_raw_vs_clean)
+  - job_name: postgres-exporter
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+
+  # --- Services du pipeline ----------------------------------------------
+  - job_name: tmdb-producer
+    static_configs:
+      - targets: ["tmdb-producer:8000"]
+
+  - job_name: datalake-writer
+    static_configs:
+      - targets: ["datalake-writer:8000"]
+
+  - job_name: imdb-fetcher
+    static_configs:
+      - targets: ["imdb-fetcher:8000"]
+
+  # Volume présent dans le Data Lake : côté « Raw » de l'indicateur Raw vs Clean
+  - job_name: datalake-exporter
+    static_configs:
+      - targets: ["datalake-exporter:8000"]
