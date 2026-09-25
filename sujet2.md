@@ -23,9 +23,11 @@ Dans ce TP2, vous devez transformer cette architecture en une plateforme Data au
 
 L'objectif final est d'obtenir une chaîne reproductible :
 
-API ──► Kafka ──┐\
-                ├──► Agrégation ──► Data Lake ──► PySpark ──► PostgreSQL ──► Data Viz\
+```
+API ──► Kafka ──┐
+                ├──► Agrégation ──► Data Lake ──► PySpark ──► PostgreSQL ──► Data Viz
 Source 2 ───────┘
+```
 
 Monitoring\
 Prometheus ──► Grafana
@@ -68,28 +70,30 @@ Produisez d'abord le schéma de votre architecture.
 
 Il doit faire apparaître au minimum :
 
-              ┌──────────┐\
-              │   API    │\
-              └────┬─────┘\
-                   ↓\
-                 Kafka\
-                   │\
-                   │\
-Source 2 ──────────┤\
-                   ↓\
-               Agrégation\
-                   ↓\
-               Data Lake\
-                   ↓\
-                PySpark\
-                   ↓\
-               PostgreSQL\
-                   ↓\
+```
+              ┌──────────┐
+              │   API    │
+              └────┬─────┘
+                   ↓
+                 Kafka
+                   │
+                   │
+Source 2 ──────────┤
+                   ↓
+               Agrégation
+                   ↓
+               Data Lake
+                   ↓
+                PySpark
+                   ↓
+               PostgreSQL
+                   ↓
                Data Viz
 
-        Prometheus ──► Grafana\
-             │\
+        Prometheus ──► Grafana
+             │
              └── Monitoring
+```
 
 Le schéma doit également préciser les principaux services Docker et les volumes nécessaires à la persistance.
 
@@ -116,9 +120,11 @@ Construire une logique permettant de réunir les deux sources.
 
 La logique doit être justifiée par le besoin métier.
 
-API → Kafka ─────┐\
-                 ├──► Agrégation\
+```
+API → Kafka ─────┐
+                 ├──► Agrégation
 Source 2 ────────┘
+```
 
 Étape C — Data Lake
 
@@ -128,11 +134,13 @@ Les données brutes doivent être conservées et organisées de manière identif
 
 Exemple :
 
-data-lake/\
-├── raw/\
-│   ├── api/\
-│   └── source2/\
+```
+data-lake/
+├── raw/
+│   ├── api/
+│   └── source2/
 └── aggregated/
+```
 
 Étape D — Traitement PySpark
 
@@ -184,11 +192,13 @@ Pipeline Data
 
 Suivre la quantité de données :
 
-Données brutes dans le Data Lake\
-              ↓\
-        Traitement PySpark\
-              ↓\
+```
+Données brutes dans le Data Lake
+              ↓
+        Traitement PySpark
+              ↓
 Données propres dans PostgreSQL
+```
 
 L'objectif est de pouvoir vérifier que les données collectées sont effectivement traitées et chargées.
 
@@ -261,20 +271,22 @@ Un seul dépôt Git doit contenir l'ensemble du projet.
 ---
 ## 8. Arborescence recommandée
 
-TP2/\
-├── docker-compose.yml\
-├── README.md\
-│\
-├── api/\
-├── source2/\
-├── kafka/\
-├── spark/\
-├── datalake/\
-├── postgres/\
-├── dataviz/\
-├── monitoring/\
-└── docs/\
+```
+TP2/
+├── docker-compose.yml
+├── README.md
+│
+├── api/
+├── source2/
+├── kafka/
+├── spark/
+├── datalake/
+├── postgres/
+├── dataviz/
+├── monitoring/
+└── docs/
     └── architecture.png
+```
 
 ---
 ## 9. Critères de réussite
