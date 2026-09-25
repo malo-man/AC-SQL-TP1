@@ -437,7 +437,7 @@
       },
       "targets": [
         {
-          "expr": "pipeline_clean_rows{table=\"movies\"} / clamp_min(pipeline_load_run_distinct_movies_in{pipeline_job=\"aggregate\"}, 1) * 100",
+          "expr": "sum(pipeline_clean_rows{table=\"movies\"}) / clamp_min(sum(pipeline_load_run_distinct_movies_in{pipeline_job=\"aggregate\"}), 1) * 100",
           "refId": "A",
           "datasource": {
             "type": "prometheus",

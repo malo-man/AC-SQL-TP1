@@ -34,7 +34,9 @@ QUESTIONS: list[dict] = [
     },
     {
         "name": "Volume traité par le pipeline",
-        "description": "Brut lu, films distincts et lignes propres écrites à la dernière exécution.",
+        "description": (
+            "Brut lu, films distincts et lignes propres écrites à la dernière exécution."
+        ),
         "display": "table",
         "sql": (
             "SELECT job, status, raw_rows_in, distinct_movies_in,\n"

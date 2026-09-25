@@ -199,7 +199,9 @@ class Runner:
             except httpx.HTTPError:
                 # Coupure réseau ou incident TMDB : on réessaie sans faire tomber le service
                 ERRORS.labels(JOB).inc()
-                log.exception("Liste %s inaccessible, nouvelle tentative dans 30 s", cursor.list_name)
+                log.exception(
+                    "Liste %s inaccessible, nouvelle tentative dans 30 s", cursor.list_name
+                )
                 time.sleep(30)
                 continue
             results = page.get("results", [])

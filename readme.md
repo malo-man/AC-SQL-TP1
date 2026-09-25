@@ -181,7 +181,7 @@ docker compose run --rm --no-deps -v "$PWD/fixtures/datalake:/fixtures" \
 |---|---|
 | `tmdb-producer` redémarre en boucle | `TMDB_READ_ACCESS_TOKEN` absent ou invalide dans `.env` |
 | `Aucune donnée TMDB dans le lac` | Normal les premières minutes : le writer écrit par lots de 200 messages ou toutes les 60 s |
-| `has_imdb_match` à `false` partout | Les films populaires sont des sorties récentes, encore absentes de `title.ratings`. Les rapprochements apparaissent quand le producer atteint la liste des mieux notés |
+| `has_imdb_match` à `false` partout | L'agrégation a tourné avant la fin de la première collecte IMDb (environ une minute). Le cycle Spark suivant corrige de lui-même ; pour ne pas attendre : `docker compose exec spark-jobs python /app/aggregate.py` |
 | Metabase répond `502` au démarrage | Il applique ses migrations : compter 1 à 2 minutes, `metabase-init` attend automatiquement |
 | Port déjà utilisé | Changer le port correspondant dans `.env` (`GRAFANA_PORT`, `METABASE_PORT`...) |
 | Cible Prometheus `down` | Le service correspondant est arrêté : `docker compose up -d <service>` |

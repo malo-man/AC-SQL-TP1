@@ -24,7 +24,15 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 
-from common import LoadRun, Settings, build_session, latest_partition, load_settings, log, setup_logging
+from common import (
+    LoadRun,
+    Settings,
+    build_session,
+    latest_partition,
+    load_settings,
+    log,
+    setup_logging,
+)
 
 JOB = "load_mart"
 
@@ -39,7 +47,10 @@ TABLES: list[tuple[str, list[str], list[str]]] = [
     ("languages", ["iso_639_1", "name", "english_name"], ["iso_639_1"]),
     (
         "people",
-        ["id", "name", "original_name", "gender", "known_for_department", "popularity", "profile_path"],
+        [
+            "id", "name", "original_name", "gender", "known_for_department",
+            "popularity", "profile_path",
+        ],
         ["id"],
     ),
     (
@@ -58,7 +69,11 @@ TABLES: list[tuple[str, list[str], list[str]]] = [
     ("movie_production_companies", ["movie_id", "company_id"], ["movie_id", "company_id"]),
     ("movie_production_countries", ["movie_id", "country_id"], ["movie_id", "country_id"]),
     ("movie_spoken_languages", ["movie_id", "language_id"], ["movie_id", "language_id"]),
-    ("movie_cast", ["credit_id", "movie_id", "person_id", "character", "cast_order"], ["credit_id"]),
+    (
+        "movie_cast",
+        ["credit_id", "movie_id", "person_id", "character", "cast_order"],
+        ["credit_id"],
+    ),
     ("movie_crew", ["credit_id", "movie_id", "person_id", "department", "job"], ["credit_id"]),
 ]
 
@@ -215,7 +230,12 @@ def write_staging(frame: DataFrame, table: str, settings: Settings) -> None:
 
 
 def upsert_sql(table: str, columns: list[str], primary_key: list[str]) -> str:
-    """Construit l'UPSERT du transit vers la table cible."""
+    """Construit l'UPSERT du transit vers la table cible.
+
+    Les tables de liaison n'ont que des colonnes de clé : il n'y a rien à mettre
+    à jour quand le lien existe déjà, d'où le DO NOTHING et un compte de lignes
+    écrites nul aux exécutions suivantes.
+    """
     quoted = ", ".join(f'"{c}"' for c in columns)
     conflict = ", ".join(f'"{c}"' for c in primary_key)
     updates = [f'"{c}" = EXCLUDED."{c}"' for c in columns if c not in primary_key]
@@ -264,7 +284,7 @@ def main() -> int:
 
             written = apply_upserts(settings)
             detail = ", ".join(f"{name}={count}" for name, count in written.items())
-            log.info("Chargement terminé : %s", detail)
+            log.info("Chargement terminé, lignes insérées ou mises à jour : %s", detail)
             run.succeed(
                 message=detail[:500],
                 raw_rows_in=rows_in,

@@ -24,7 +24,16 @@ from pyspark.sql import Column, DataFrame, SparkSession
 from pyspark.sql import functions as F
 from pyspark.sql.window import Window
 
-from common import LoadRun, Settings, build_session, has_data, latest_partition, load_settings, log, setup_logging
+from common import (
+    LoadRun,
+    Settings,
+    build_session,
+    has_data,
+    latest_partition,
+    load_settings,
+    log,
+    setup_logging,
+)
 from schemas import ENVELOPE, TITLE_BASICS, TITLE_RATINGS
 
 JOB = "aggregate"
