@@ -1,0 +1,214 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1420" height="1150" viewBox="0 0 1420 1150" font-family="DejaVu Sans, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#3c4043"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#137333"/>
+    </marker>
+  </defs>
+
+  <rect width="1420" height="1150" fill="#ffffff"/>
+
+  <!-- ================= titre ================= -->
+  <text x="40" y="44" font-size="25" font-weight="bold" fill="#202124">TP2 — Architecture de la plateforme Data (TMDB × IMDb)</text>
+  <text x="40" y="70" font-size="14" fill="#5f6368">Tous les services sont des conteneurs orchestrés par un seul docker-compose.yml. Les ports sont publiés sur 127.0.0.1 uniquement.</text>
+
+  <!-- ================= colonne pipeline ================= -->
+  <text x="60" y="112" font-size="15" font-weight="bold" fill="#1a73e8">CHAÎNE DE TRAITEMENT</text>
+
+  <!-- sources externes -->
+  <rect x="60" y="128" width="250" height="58" rx="8" fill="#f1f3f4" stroke="#5f6368" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text x="185" y="152" font-size="15" font-weight="bold" fill="#202124" text-anchor="middle">Source 1 — API TMDB</text>
+  <text x="185" y="172" font-size="12" fill="#5f6368" text-anchor="middle">api.themoviedb.org · JSON · externe</text>
+
+  <rect x="370" y="128" width="270" height="58" rx="8" fill="#f1f3f4" stroke="#5f6368" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text x="505" y="152" font-size="15" font-weight="bold" fill="#202124" text-anchor="middle">Source 2 — Datasets IMDb</text>
+  <text x="505" y="172" font-size="12" fill="#5f6368" text-anchor="middle">datasets.imdbws.com · TSV gzip · externe</text>
+
+  <!-- collecte -->
+  <rect x="60" y="228" width="250" height="72" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="2"/>
+  <text x="185" y="254" font-size="15" font-weight="bold" fill="#174ea6" text-anchor="middle">tmdb-producer</text>
+  <text x="185" y="274" font-size="12" fill="#3c4043" text-anchor="middle">api/ — 1 film/s, curseur repris</text>
+  <text x="185" y="291" font-size="11" fill="#5f6368" text-anchor="middle">métriques :9102</text>
+
+  <rect x="370" y="228" width="270" height="72" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="2"/>
+  <text x="505" y="254" font-size="15" font-weight="bold" fill="#174ea6" text-anchor="middle">imdb-fetcher</text>
+  <text x="505" y="274" font-size="12" fill="#3c4043" text-anchor="middle">source2/ — 1 collecte / 24 h</text>
+  <text x="505" y="291" font-size="11" fill="#5f6368" text-anchor="middle">métriques :9101</text>
+
+  <line x1="185" y1="186" x2="185" y2="226" stroke="#3c4043" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="505" y1="186" x2="505" y2="226" stroke="#3c4043" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- kafka -->
+  <rect x="60" y="342" width="250" height="80" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="2"/>
+  <text x="185" y="368" font-size="15" font-weight="bold" fill="#174ea6" text-anchor="middle">kafka (KRaft, mono-nœud)</text>
+  <text x="185" y="388" font-size="12" fill="#3c4043" text-anchor="middle">topic tmdb.movies.raw</text>
+  <text x="185" y="406" font-size="11" fill="#5f6368" text-anchor="middle">1 partition · rétention 7 j · :9092 interne</text>
+
+  <rect x="336" y="352" width="168" height="44" rx="8" fill="#f8f9fa" stroke="#1a73e8" stroke-width="1.5" stroke-dasharray="5 3"/>
+  <text x="420" y="371" font-size="12.5" font-weight="bold" fill="#174ea6" text-anchor="middle">kafka-init</text>
+  <text x="420" y="387" font-size="11" fill="#5f6368" text-anchor="middle">crée le topic, puis sort</text>
+  <line x1="336" y1="374" x2="312" y2="374" stroke="#1a73e8" stroke-width="1.5" stroke-dasharray="4 3"/>
+
+  <line x1="185" y1="300" x2="185" y2="340" stroke="#3c4043" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="196" y="325" font-size="11.5" fill="#5f6368">produce</text>
+
+  <!-- writer -->
+  <rect x="60" y="462" width="250" height="68" rx="8" fill="#e8f0fe" stroke="#1a73e8" stroke-width="2"/>
+  <text x="185" y="487" font-size="15" font-weight="bold" fill="#174ea6" text-anchor="middle">datalake-writer</text>
+  <text x="185" y="506" font-size="12" fill="#3c4043" text-anchor="middle">datalake/ — commit après écriture</text>
+  <text x="185" y="522" font-size="11" fill="#5f6368" text-anchor="middle">métriques :9103</text>
+
+  <line x1="185" y1="422" x2="185" y2="460" stroke="#3c4043" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="196" y="446" font-size="11.5" fill="#5f6368">consume</text>
+
+  <!-- data lake -->
+  <rect x="50" y="572" width="610" height="166" rx="10" fill="#fef7e0" stroke="#f9ab00" stroke-width="2.5"/>
+  <text x="66" y="596" font-size="14.5" font-weight="bold" fill="#8a6100">DATA LAKE — volume Docker « datalake »</text>
+
+  <rect x="68" y="610" width="176" height="110" rx="7" fill="#ffffff" stroke="#f9ab00" stroke-width="1.5"/>
+  <text x="156" y="632" font-size="12.5" font-weight="bold" fill="#3c4043" text-anchor="middle">raw/tmdb/movies</text>
+  <text x="156" y="652" font-size="11" fill="#5f6368" text-anchor="middle">ingest_date=YYYY-MM-DD</text>
+  <text x="156" y="670" font-size="11" fill="#5f6368" text-anchor="middle">part-*.jsonl.gz</text>
+  <text x="156" y="688" font-size="11" fill="#5f6368" text-anchor="middle">_part-*.json (manifeste)</text>
+  <text x="156" y="708" font-size="10.5" fill="#8a6100" text-anchor="middle">jamais modifié</text>
+
+  <rect x="258" y="610" width="186" height="110" rx="7" fill="#ffffff" stroke="#f9ab00" stroke-width="1.5"/>
+  <text x="351" y="632" font-size="12.5" font-weight="bold" fill="#3c4043" text-anchor="middle">raw/imdb/&lt;dataset&gt;</text>
+  <text x="351" y="652" font-size="11" fill="#5f6368" text-anchor="middle">ingest_date=YYYY-MM-DD</text>
+  <text x="351" y="670" font-size="11" fill="#5f6368" text-anchor="middle">title.ratings.tsv.gz</text>
+  <text x="351" y="688" font-size="11" fill="#5f6368" text-anchor="middle">_manifest.json</text>
+  <text x="351" y="708" font-size="10.5" fill="#8a6100" text-anchor="middle">jamais modifié</text>
+
+  <rect x="458" y="610" width="186" height="110" rx="7" fill="#ffffff" stroke="#f9ab00" stroke-width="1.5"/>
+  <text x="551" y="632" font-size="12.5" font-weight="bold" fill="#3c4043" text-anchor="middle">aggregated/movies</text>
+  <text x="551" y="652" font-size="11" fill="#5f6368" text-anchor="middle">ingest_date=YYYY-MM-DD</text>
+  <text x="551" y="670" font-size="11" fill="#5f6368" text-anchor="middle">*.parquet</text>
+  <text x="551" y="690" font-size="10.5" fill="#8a6100" text-anchor="middle">TMDB enrichi IMDb</text>
+  <text x="551" y="708" font-size="10.5" fill="#8a6100" text-anchor="middle">1 ligne = 1 film</text>
+
+  <line x1="156" y1="530" x2="156" y2="570" stroke="#3c4043" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="420" y1="300" x2="420" y2="570" stroke="#3c4043" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="430" y="470" font-size="11.5" fill="#5f6368">dépose le fichier tel quel</text>
+
+  <!-- spark -->
+  <rect x="50" y="792" width="610" height="104" rx="10" fill="#e8f0fe" stroke="#1a73e8" stroke-width="2"/>
+  <text x="66" y="816" font-size="14.5" font-weight="bold" fill="#174ea6">spark-jobs — PySpark 3.5 (local[*]), relancé toutes les 5 min</text>
+  <rect x="70" y="828" width="256" height="52" rx="7" fill="#ffffff" stroke="#1a73e8" stroke-width="1.5"/>
+  <text x="198" y="849" font-size="13" font-weight="bold" fill="#3c4043" text-anchor="middle">aggregate.py</text>
+  <text x="198" y="867" font-size="11" fill="#5f6368" text-anchor="middle">types · doublons · jointure IMDb</text>
+  <rect x="384" y="828" width="256" height="52" rx="7" fill="#ffffff" stroke="#1a73e8" stroke-width="1.5"/>
+  <text x="512" y="849" font-size="13" font-weight="bold" fill="#3c4043" text-anchor="middle">load_mart.py</text>
+  <text x="512" y="867" font-size="11" fill="#5f6368" text-anchor="middle">explode · staging · UPSERT</text>
+  <line x1="326" y1="854" x2="382" y2="854" stroke="#3c4043" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <line x1="156" y1="720" x2="156" y2="790" stroke="#3c4043" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="351" y1="720" x2="351" y2="790" stroke="#3c4043" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="166" y="762" font-size="11.5" fill="#5f6368">lit les deux zones brutes</text>
+  <line x1="524" y1="790" x2="524" y2="722" stroke="#3c4043" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="534" y="752" font-size="11" fill="#5f6368">écrit</text>
+  <line x1="600" y1="722" x2="600" y2="790" stroke="#3c4043" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="610" y="762" font-size="11" fill="#5f6368">lit</text>
+
+  <!-- postgres -->
+  <rect x="50" y="950" width="610" height="112" rx="10" fill="#f3e8fd" stroke="#8430ce" stroke-width="2.5"/>
+  <text x="66" y="974" font-size="14.5" font-weight="bold" fill="#6a1b9a">postgres:17 — volume « pgdata » · :5433</text>
+  <rect x="68" y="988" width="276" height="58" rx="7" fill="#ffffff" stroke="#8430ce" stroke-width="1.5"/>
+  <text x="206" y="1009" font-size="12.5" font-weight="bold" fill="#3c4043" text-anchor="middle">schéma public — modèle TP1</text>
+  <text x="206" y="1028" font-size="11" fill="#5f6368" text-anchor="middle">alimenté par le CLI tmdb_app</text>
+  <rect x="364" y="988" width="280" height="58" rx="7" fill="#ffffff" stroke="#8430ce" stroke-width="1.5"/>
+  <text x="504" y="1009" font-size="12.5" font-weight="bold" fill="#3c4043" text-anchor="middle">schéma mart — données propres</text>
+  <text x="504" y="1028" font-size="11" fill="#5f6368" text-anchor="middle">13 tables + load_runs (audit) + vues</text>
+  <line x1="512" y1="896" x2="512" y2="948" stroke="#3c4043" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="522" y="926" font-size="11.5" fill="#5f6368">JDBC</text>
+
+  <rect x="336" y="900" width="168" height="40" rx="8" fill="#f8f9fa" stroke="#8430ce" stroke-width="1.5" stroke-dasharray="5 3"/>
+  <text x="420" y="917" font-size="12" font-weight="bold" fill="#6a1b9a" text-anchor="middle">db-migrate</text>
+  <text x="420" y="932" font-size="10.5" fill="#5f6368" text-anchor="middle">DDL idempotente, puis sort</text>
+
+  <line x1="420" y1="940" x2="420" y2="948" stroke="#8430ce" stroke-width="1.5" stroke-dasharray="4 3"/>
+
+  <!-- dataviz -->
+  <rect x="50" y="1076" width="610" height="56" rx="10" fill="#fce8e6" stroke="#c5221f" stroke-width="2.5"/>
+  <text x="200" y="1099" font-size="14.5" font-weight="bold" fill="#a50e0e" text-anchor="middle">metabase — Data Viz :3001</text>
+  <text x="200" y="1119" font-size="11" fill="#5f6368" text-anchor="middle">6 questions + 1 dashboard sur les vues mart</text>
+  <rect x="404" y="1086" width="240" height="38" rx="7" fill="#ffffff" stroke="#c5221f" stroke-width="1.5" stroke-dasharray="5 3"/>
+  <text x="524" y="1102" font-size="12" font-weight="bold" fill="#a50e0e" text-anchor="middle">metabase-init</text>
+  <text x="524" y="1117" font-size="10.5" fill="#5f6368" text-anchor="middle">provisionne par API, puis sort</text>
+  <line x1="200" y1="1062" x2="200" y2="1074" stroke="#3c4043" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <!-- ================= observabilité ================= -->
+  <rect x="700" y="96" width="680" height="800" rx="12" fill="#f6fbf7" stroke="#137333" stroke-width="1.5" stroke-dasharray="8 5"/>
+  <text x="720" y="128" font-size="15" font-weight="bold" fill="#137333">OBSERVABILITÉ</text>
+
+  <rect x="1020" y="152" width="330" height="96" rx="8" fill="#e6f4ea" stroke="#137333" stroke-width="2"/>
+  <text x="1185" y="180" font-size="15" font-weight="bold" fill="#0d652d" text-anchor="middle">grafana :3000</text>
+  <text x="1185" y="202" font-size="11.5" fill="#3c4043" text-anchor="middle">volume « grafanadata » · provisionné as code</text>
+  <text x="1185" y="222" font-size="11.5" fill="#3c4043" text-anchor="middle">Infrastructure · PostgreSQL · Pipeline</text>
+  <text x="1185" y="240" font-size="11.5" font-weight="bold" fill="#0d652d" text-anchor="middle">indicateur Raw vs Clean</text>
+
+  <rect x="1020" y="312" width="330" height="80" rx="8" fill="#e6f4ea" stroke="#137333" stroke-width="2"/>
+  <text x="1185" y="340" font-size="15" font-weight="bold" fill="#0d652d" text-anchor="middle">prometheus :9090</text>
+  <text x="1185" y="361" font-size="11.5" fill="#3c4043" text-anchor="middle">volume « prometheusdata »</text>
+  <text x="1185" y="379" font-size="11.5" fill="#3c4043" text-anchor="middle">scrape toutes les 15 s</text>
+  <line x1="1185" y1="312" x2="1185" y2="252" stroke="#137333" stroke-width="2" marker-end="url(#arrowGreen)"/>
+  <text x="1195" y="286" font-size="11.5" fill="#137333">source de données</text>
+
+  <rect x="1020" y="470" width="330" height="200" rx="8" fill="#ffffff" stroke="#137333" stroke-width="1.8"/>
+  <text x="1040" y="496" font-size="13" font-weight="bold" fill="#0d652d">Exporters</text>
+  <text x="1040" y="522" font-size="11.5" fill="#3c4043">cadvisor :8081 — état, CPU, RAM des conteneurs</text>
+  <text x="1040" y="548" font-size="11.5" fill="#3c4043">node-exporter :9100 — ressources de l'hôte</text>
+  <text x="1040" y="574" font-size="11.5" fill="#3c4043">postgres-exporter :9187 — base, activité,</text>
+  <text x="1052" y="592" font-size="11.5" fill="#3c4043">mart.v_clean_counts et mart.load_runs</text>
+  <text x="1040" y="618" font-size="11.5" fill="#3c4043">datalake-exporter :9104 — parcourt les</text>
+  <text x="1052" y="636" font-size="11.5" fill="#3c4043">manifestes du lac (volume monté en ro)</text>
+  <text x="1040" y="658" font-size="11" fill="#137333">→ pipeline_raw_rows vs pipeline_clean_rows</text>
+  <line x1="1185" y1="470" x2="1185" y2="396" stroke="#137333" stroke-width="2" marker-end="url(#arrowGreen)"/>
+
+  <!-- rail de métriques applicatives -->
+  <path d="M 310 288 L 334 288 L 334 320 L 690 320" fill="none" stroke="#137333" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <line x1="640" y1="264" x2="690" y2="264" stroke="#137333" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <line x1="310" y1="496" x2="690" y2="496" stroke="#137333" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <line x1="690" y1="264" x2="690" y2="360" stroke="#137333" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <line x1="690" y1="496" x2="690" y2="352" stroke="#137333" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <line x1="690" y1="352" x2="1018" y2="352" stroke="#137333" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#arrowGreen)"/>
+  <text x="712" y="344" font-size="11.5" fill="#137333">/metrics des services de collecte</text>
+  <text x="344" y="314" font-size="11" fill="#137333">/metrics</text>
+  <text x="320" y="490" font-size="11" fill="#137333">/metrics</text>
+
+  <!-- postgres-exporter lit postgres -->
+  <path d="M 660 1006 L 840 1006 L 840 700 L 1100 700 L 1100 672" fill="none" stroke="#137333" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrowGreen)"/>
+  <text x="852" y="694" font-size="11" fill="#137333">SQL de supervision</text>
+  <!-- datalake-exporter lit le lac -->
+  <path d="M 660 655 L 780 655 L 780 730 L 1260 730 L 1260 672" fill="none" stroke="#137333" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrowGreen)"/>
+  <text x="1000" y="724" font-size="11" fill="#137333">lecture des manifestes</text>
+  <!-- metabase lit postgres -->
+  <text x="212" y="1070" font-size="11.5" fill="#5f6368">SQL sur les vues mart</text>
+
+  <!-- ================= légende ================= -->
+  <rect x="700" y="920" width="680" height="212" rx="10" fill="#fafafa" stroke="#dadce0" stroke-width="1.5"/>
+  <text x="720" y="948" font-size="13.5" font-weight="bold" fill="#202124">Légende</text>
+
+  <rect x="722" y="962" width="26" height="16" rx="4" fill="#e8f0fe" stroke="#1a73e8" stroke-width="1.5"/>
+  <text x="758" y="975" font-size="12" fill="#3c4043">service Docker du pipeline</text>
+  <rect x="722" y="990" width="26" height="16" rx="4" fill="#fef7e0" stroke="#f9ab00" stroke-width="1.5"/>
+  <text x="758" y="1003" font-size="12" fill="#3c4043">volume persistant (Data Lake)</text>
+  <rect x="722" y="1018" width="26" height="16" rx="4" fill="#f3e8fd" stroke="#8430ce" stroke-width="1.5"/>
+  <text x="758" y="1031" font-size="12" fill="#3c4043">PostgreSQL (volume pgdata)</text>
+  <rect x="722" y="1046" width="26" height="16" rx="4" fill="#e6f4ea" stroke="#137333" stroke-width="1.5"/>
+  <text x="758" y="1059" font-size="12" fill="#3c4043">supervision</text>
+  <rect x="722" y="1074" width="26" height="16" rx="4" fill="#f1f3f4" stroke="#5f6368" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <text x="758" y="1087" font-size="12" fill="#3c4043">hors plateforme / conteneur éphémère</text>
+
+  <line x1="1060" y1="970" x2="1110" y2="970" stroke="#3c4043" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="1120" y="975" font-size="12" fill="#3c4043">flux de données</text>
+  <line x1="1060" y1="998" x2="1110" y2="998" stroke="#137333" stroke-width="1.8" stroke-dasharray="5 4" marker-end="url(#arrowGreen)"/>
+  <text x="1120" y="1003" font-size="12" fill="#3c4043">collecte de métriques</text>
+
+  <text x="1060" y="1034" font-size="12" fill="#5f6368">Volumes : pgdata · datalake · kafkadata</text>
+  <text x="1060" y="1052" font-size="12" fill="#5f6368">producer_state · prometheusdata · grafanadata</text>
+  <text x="1060" y="1080" font-size="12" font-weight="bold" fill="#202124">Démarrage : docker compose up -d</text>
+  <text x="1060" y="1098" font-size="11.5" fill="#5f6368">Aucune étape manuelle : le topic, la DDL et le</text>
+  <text x="1060" y="1114" font-size="11.5" fill="#5f6368">dashboard Metabase sont créés automatiquement.</text>
+</svg>
