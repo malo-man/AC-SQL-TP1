@@ -19,5 +19,22 @@ services:
       timeout: 5s
       retries: 10
 
+  # Source 2 : datasets publics IMDb déposés tels quels dans datalake/raw/imdb
+  imdb-fetcher:
+    build: ./source2
+    container_name: tmdb_imdb_fetcher
+    restart: unless-stopped
+    environment:
+      DATALAKE_DIR: /datalake
+      IMDB_DATASETS: ${IMDB_DATASETS:-title.ratings,title.basics}
+      IMDB_FETCH_INTERVAL_HOURS: ${IMDB_FETCH_INTERVAL_HOURS:-24}
+      METRICS_PORT: 8000
+    ports:
+      - "127.0.0.1:${IMDB_METRICS_PORT:-9101}:8000"
+    volumes:
+      - datalake:/datalake
+
 volumes:
   pgdata:
+  # Data Lake partagé entre la collecte et Spark
+  datalake:
