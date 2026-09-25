@@ -89,6 +89,35 @@ services:
   # Collecte
   # ===================================================================
 
+  # Source 1 : interrogation continue de l'API TMDB, publication dans Kafka
+  tmdb-producer:
+    build: ./api
+    container_name: tmdb_producer
+    # on-failure (et non unless-stopped) : un arrêt volontaire après TMDB_MAX_MOVIES
+    # doit rester un arrêt, seules les pannes justifient un redémarrage
+    restart: on-failure:5
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+    environment:
+      TMDB_READ_ACCESS_TOKEN: ${TMDB_READ_ACCESS_TOKEN}
+      TMDB_LANGUAGE: ${TMDB_LANGUAGE:-fr-FR}
+      TMDB_LISTS: ${TMDB_LISTS:-popular,top_rated}
+      TMDB_MAX_PAGES: ${TMDB_MAX_PAGES:-10}
+      TMDB_MAX_MOVIES: ${TMDB_MAX_MOVIES:-0}
+      TMDB_POLL_INTERVAL_SECONDS: ${TMDB_POLL_INTERVAL_SECONDS:-1.0}
+      KAFKA_BOOTSTRAP: kafka:9092
+      KAFKA_TOPIC: ${KAFKA_TOPIC:-tmdb.movies.raw}
+      PRODUCER_STATE_FILE: /state/cursor.json
+      METRICS_PORT: 8000
+    ports:
+      - "127.0.0.1:${TMDB_METRICS_PORT:-9102}:8000"
+    volumes:
+      # Curseur de collecte : reprise exactement où le producer s'était arrêté
+      - producer_state:/state
+
   # Source 2 : datasets publics IMDb déposés tels quels dans datalake/raw/imdb
   imdb-fetcher:
     build: ./source2
@@ -111,3 +140,5 @@ volumes:
   # Journaux Kafka : le lac reste la source de vérité, mais le broker doit
   # survivre à un redémarrage sans perdre les messages non encore consommés
   kafkadata:
+  # Curseur du producer TMDB
+  producer_state:
