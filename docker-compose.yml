@@ -118,6 +118,29 @@ services:
       # Curseur de collecte : reprise exactement où le producer s'était arrêté
       - producer_state:/state
 
+  # Dépose les messages Kafka tels quels dans la zone raw du Data Lake
+  datalake-writer:
+    build: ./datalake
+    container_name: tmdb_datalake_writer
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+    environment:
+      DATALAKE_DIR: /datalake
+      KAFKA_BOOTSTRAP: kafka:9092
+      KAFKA_TOPIC: ${KAFKA_TOPIC:-tmdb.movies.raw}
+      KAFKA_GROUP_ID: ${KAFKA_GROUP_ID:-datalake-writer}
+      WRITER_BATCH_SIZE: ${WRITER_BATCH_SIZE:-200}
+      WRITER_FLUSH_SECONDS: ${WRITER_FLUSH_SECONDS:-60}
+      METRICS_PORT: 8000
+    ports:
+      - "127.0.0.1:${WRITER_METRICS_PORT:-9103}:8000"
+    volumes:
+      - datalake:/datalake
+
   # Source 2 : datasets publics IMDb déposés tels quels dans datalake/raw/imdb
   imdb-fetcher:
     build: ./source2
