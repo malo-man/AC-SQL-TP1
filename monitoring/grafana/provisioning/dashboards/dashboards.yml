@@ -1,0 +1,15 @@
+# Les dashboards sont versionnés dans le dépôt et rechargés automatiquement.
+apiVersion: 1
+
+providers:
+  - name: tp2
+    orgId: 1
+    folder: TP2
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    # Les modifications faites dans l'interface sont autorisées, mais le fichier
+    # du dépôt reste la référence : il est rechargé à chaque démarrage.
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards

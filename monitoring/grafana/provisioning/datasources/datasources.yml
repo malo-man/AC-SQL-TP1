@@ -1,0 +1,27 @@
+# Sources de données provisionnées au démarrage : aucune saisie manuelle.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    jsonData:
+      timeInterval: 15s
+
+  # Accès direct au schéma mart : le dashboard pipeline affiche le détail des
+  # exécutions en SQL, là où Prometheus ne donnerait que des séries agrégées.
+  - name: PostgreSQL (mart)
+    uid: postgres-mart
+    type: grafana-postgresql-datasource
+    access: proxy
+    url: postgres:5432
+    user: $POSTGRES_USER
+    secureJsonData:
+      password: $POSTGRES_PASSWORD
+    jsonData:
+      database: $POSTGRES_DB
+      sslmode: disable
+      postgresVersion: 1700
