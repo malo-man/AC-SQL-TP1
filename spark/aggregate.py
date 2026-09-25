@@ -33,6 +33,7 @@ from common import (
     load_settings,
     log,
     setup_logging,
+    pipeline_lock,
 )
 from schemas import ENVELOPE, TITLE_BASICS, TITLE_RATINGS
 
@@ -203,7 +204,12 @@ def main() -> int:
     setup_logging()
     settings = load_settings()
 
-    with LoadRun(settings, JOB) as run:
+    with LoadRun(settings, JOB) as run, pipeline_lock(settings, JOB) as acquired:
+        if not acquired:
+            log.warning("Un autre job du pipeline est en cours, %s est ignoré", JOB)
+            run.skip("exécution concurrente")
+            return 0
+
         if not has_data(settings.raw_tmdb):
             # Cas normal au tout premier démarrage : la collecte n'a pas encore
             # produit de fichier. On sort proprement, sans faire boucler le service.

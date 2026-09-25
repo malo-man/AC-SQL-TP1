@@ -3,6 +3,9 @@
 import logging
 import os
 import uuid
+import zlib
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -131,6 +134,41 @@ def has_data(path: Path) -> bool:
         for part in partitions(path)
         for f in part.iterdir()
     )
+
+
+# ---------------------------------------------------------------------
+# Exclusion mutuelle entre exécutions
+# ---------------------------------------------------------------------
+
+
+# Un seul verrou pour les deux jobs : ils forment une seule section critique.
+# Les sérialiser séparément ne suffirait pas, puisque l'agrégation réécrit la
+# partition Parquet que le chargement est en train de lire.
+PIPELINE_LOCK_KEY = zlib.crc32(b"tp2-pipeline")
+
+
+@contextmanager
+def pipeline_lock(settings: Settings, job: str) -> Iterator[bool]:
+    """Empêche deux exécutions simultanées d'un job du pipeline.
+
+    Les jobs partagent un état global : la partition Parquet du jour, réécrite
+    par l'agrégation et lue par le chargement, et les tables de transit, vidées
+    puis remplies à chaque chargement. Deux exécutions concurrentes se
+    marcheraient dessus — fichiers disparaissant en pleine lecture, clés
+    étrangères violées. Le cas se produit dès qu'on lance un job à la main
+    pendant que l'ordonnanceur lance le sien, ce que le README propose.
+
+    Le verrou consultatif est tenu par la connexion : il est libéré même si le
+    processus est tué, sans rien laisser à nettoyer.
+    """
+    key = PIPELINE_LOCK_KEY
+    with psycopg.connect(settings.conninfo, autocommit=True) as conn:
+        acquired = conn.execute("SELECT pg_try_advisory_lock(%s)", (key,)).fetchone()[0]
+        try:
+            yield acquired
+        finally:
+            if acquired:
+                conn.execute("SELECT pg_advisory_unlock(%s)", (key,))
 
 
 # ---------------------------------------------------------------------

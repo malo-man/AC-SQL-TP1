@@ -179,6 +179,16 @@ idempotents. Les tables de transit, elles, sont recréées à chaque passage : e
 contiennent rien de durable, et leur structure suit ainsi automatiquement celle des tables
 cibles.
 
+**Les deux jobs ne peuvent pas tourner en parallèle.** Ils partagent un état global : la
+partition Parquet du jour, réécrite par l'agrégation et lue par le chargement, et les tables
+de transit, vidées puis remplies à chaque chargement. Deux exécutions simultanées se
+détruisent mutuellement — fichiers disparaissant en pleine lecture, clés étrangères violées.
+Le cas n'a rien de théorique : il suffit de lancer un job à la main pendant que
+l'ordonnanceur lance le sien, ce que le README propose justement de faire. Chaque job prend
+donc un verrou consultatif PostgreSQL, unique pour tout le pipeline, et s'efface proprement
+(statut `skipped`) s'il ne l'obtient pas. Le verrou étant tenu par la connexion, il est
+libéré même si le processus est tué.
+
 **Le profil de données est réglable.** `title.basics` pèse 228 Mo pour n'apporter que
 l'année, la durée et les genres IMDb. Le profil par défaut ne collecte que `title.ratings`
 (9 Mo), qui porte l'enrichissement métier réel. Le job d'agrégation détecte l'absence du
@@ -219,6 +229,7 @@ et collecte plusieurs fois le même film.
 | Aucune perte de message | Validation des offsets après écriture, producer idempotent avec `acks=all` |
 | Reprise après arrêt | Curseur du producer persisté, offsets Kafka conservés, lot en cours vidé à l'arrêt |
 | Tolérance au démarrage à froid | Les jobs Spark sortent proprement sur un lac vide, l'agrégation fonctionne sans données IMDb |
+| Pas d'exécution concurrente | Verrou consultatif PostgreSQL commun aux deux jobs : un job lancé à la main pendant un cycle automatique s'efface au lieu de corrompre le chargement |
 | Traçabilité | Manifeste par fichier (empreinte, offsets, lignes), `source_fetched_at` et `ingest_date` sur chaque ligne du mart, table `load_runs` |
 
 ## 9. Limites assumées

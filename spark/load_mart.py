@@ -32,6 +32,7 @@ from common import (
     load_settings,
     log,
     setup_logging,
+    pipeline_lock,
 )
 
 JOB = "load_mart"
@@ -264,7 +265,12 @@ def main() -> int:
     setup_logging()
     settings = load_settings()
 
-    with LoadRun(settings, JOB) as run:
+    with LoadRun(settings, JOB) as run, pipeline_lock(settings, JOB) as acquired:
+        if not acquired:
+            log.warning("Un autre job du pipeline est en cours, %s est ignoré", JOB)
+            run.skip("exécution concurrente")
+            return 0
+
         spark = build_session(f"tp2-{JOB}")
         try:
             snapshot = read_snapshot(spark, settings)

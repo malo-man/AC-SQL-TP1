@@ -113,6 +113,10 @@ docker compose exec spark-jobs python /app/aggregate.py
 docker compose exec spark-jobs python /app/load_mart.py
 ```
 
+Si l'ordonnanceur est déjà en train de traiter, le job lancé à la main s'arrête
+immédiatement avec `Un autre job du pipeline est en cours` : les deux ne peuvent pas
+s'exécuter en parallèle sans se marcher dessus.
+
 ```bash
 docker compose exec postgres psql -U tmdb -d tmdb \
     -c "SELECT count(*) FROM mart.movies" \
