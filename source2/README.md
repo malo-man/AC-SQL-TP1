@@ -28,7 +28,7 @@ durées et des années de sortie entre les deux sources.
 TSV (séparateur tabulation) compressé en gzip, UTF-8, première ligne = en-tête.
 Les valeurs manquantes sont codées `\N` (à lire avec `nullValue="\\N"` dans Spark).
 
-### `title.ratings.tsv.gz` (~9 Mo, ~1,7 M lignes)
+### `title.ratings.tsv.gz` (9 Mo, 1,71 M lignes) — collecté par défaut
 
 | Colonne         | Type    | Description                   |
 |-----------------|---------|-------------------------------|
@@ -36,7 +36,7 @@ Les valeurs manquantes sont codées `\N` (à lire avec `nullValue="\\N"` dans Sp
 | `averageRating` | decimal | Note moyenne pondérée (1–10)  |
 | `numVotes`      | integer | Nombre de votes               |
 
-### `title.basics.tsv.gz` (~200 Mo, ~12 M lignes)
+### `title.basics.tsv.gz` (228 Mo, ~12 M lignes) — optionnel
 
 | Colonne          | Type    | Description                                              |
 |------------------|---------|----------------------------------------------------------|
@@ -80,23 +80,26 @@ IMDb, taille, empreinte SHA-256 et nombre de lignes.
 
 ## Configuration
 
-| Variable                    | Défaut                       | Rôle                                  |
-|-----------------------------|------------------------------|---------------------------------------|
-| `IMDB_DATASETS`             | `title.ratings,title.basics` | Datasets à télécharger                |
-| `IMDB_FETCH_INTERVAL_HOURS` | `24`                         | Intervalle entre deux collectes       |
-| `IMDB_METRICS_PORT`         | `9101`                       | Port local des métriques Prometheus   |
+| Variable                    | Défaut          | Rôle                                               |
+|-----------------------------|-----------------|----------------------------------------------------|
+| `IMDB_DATASETS`             | `title.ratings` | Datasets à télécharger. Ajouter `,title.basics` pour le profil complet (228 Mo) |
+| `IMDB_FETCH_INTERVAL_HOURS` | `24`            | Intervalle entre deux collectes                    |
+| `IMDB_METRICS_PORT`         | `9101`          | Port local des métriques Prometheus                |
 
 ## Métriques Prometheus
 
 Exposées sur `http://imdb-fetcher:8000/metrics` (réseau Docker) et `http://localhost:9101/metrics`.
 
-| Métrique                               | Type    | Description                                   |
-|----------------------------------------|---------|-----------------------------------------------|
-| `imdb_raw_rows{dataset}`               | gauge   | Lignes du dernier fichier brut (**Raw** côté Raw vs Clean) |
-| `imdb_last_success_timestamp_seconds`  | gauge   | Date du dernier fichier brut disponible       |
-| `imdb_files_downloaded_total`          | counter | Fichiers téléchargés                          |
-| `imdb_bytes_downloaded_total`          | counter | Octets téléchargés                            |
-| `imdb_fetch_errors_total`              | counter | Échecs de téléchargement                      |
+| Métrique                                                 | Type    | Description                             |
+|----------------------------------------------------------|---------|-----------------------------------------|
+| `pipeline_source_files_downloaded_total{source,dataset}`  | counter | Fichiers téléchargés                    |
+| `pipeline_source_bytes_downloaded_total{source,dataset}`  | counter | Octets téléchargés                      |
+| `pipeline_last_success_timestamp_seconds{job}`            | gauge   | Date du dernier fichier brut disponible |
+| `pipeline_errors_total{job}`                              | counter | Échecs de téléchargement                |
+
+Le **nombre de lignes présentes dans le lac** n'est volontairement pas publié ici : il l'est
+par `datalake-exporter` (`pipeline_raw_rows{source="imdb",dataset}`), qui mesure le contenu
+réel du Data Lake plutôt que ce que ce processus a écrit depuis son démarrage.
 
 ## Utilisation
 
@@ -104,9 +107,12 @@ Exposées sur `http://imdb-fetcher:8000/metrics` (réseau Docker) et `http://loc
 docker compose up -d imdb-fetcher
 docker compose logs -f imdb-fetcher
 
-# Collecte ponctuelle (ex. uniquement le petit fichier)
-docker compose run --rm -e IMDB_DATASETS=title.ratings imdb-fetcher python imdb_fetcher.py --once
+# Collecte ponctuelle, sans attendre le prochain cycle
+docker compose run --rm --no-deps imdb-fetcher python imdb_fetcher.py --once
 
 # Contenu du Data Lake
-docker compose run --rm imdb-fetcher find /datalake -type f
+docker compose exec datalake-writer find /datalake/raw/imdb -type f
 ```
+
+La première collecte prend environ une minute : le téléchargement est rapide, mais le
+comptage des lignes impose de décompresser entièrement le fichier pour alimenter le manifeste.
