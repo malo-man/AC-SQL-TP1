@@ -127,7 +127,7 @@ services:
       TMDB_READ_ACCESS_TOKEN: ${TMDB_READ_ACCESS_TOKEN}
       TMDB_LANGUAGE: ${TMDB_LANGUAGE:-fr-FR}
       TMDB_LISTS: ${TMDB_LISTS:-popular,top_rated}
-      TMDB_MAX_PAGES: ${TMDB_MAX_PAGES:-10}
+      TMDB_MAX_PAGES: ${TMDB_MAX_PAGES:-5}
       TMDB_MAX_MOVIES: ${TMDB_MAX_MOVIES:-0}
       TMDB_POLL_INTERVAL_SECONDS: ${TMDB_POLL_INTERVAL_SECONDS:-1.0}
       KAFKA_BOOTSTRAP: kafka:9092
@@ -316,6 +316,59 @@ services:
     volumes:
       # Lecture des zones brutes et écriture de la zone agrégée
       - datalake:/datalake
+
+  # ===================================================================
+  # Data Visualization
+  # ===================================================================
+
+  metabase:
+    image: metabase/metabase:v0.58.17
+    container_name: tmdb_metabase
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      db-migrate:
+        condition: service_completed_successfully
+    environment:
+      # Configuration stockée dans PostgreSQL et non dans le H2 par défaut du
+      # conteneur, qui disparaîtrait à la moindre recréation
+      MB_DB_TYPE: postgres
+      MB_DB_HOST: postgres
+      MB_DB_PORT: 5432
+      MB_DB_DBNAME: metabase
+      MB_DB_USER: ${POSTGRES_USER:-tmdb}
+      MB_DB_PASS: ${POSTGRES_PASSWORD:-tmdb}
+      MB_SITE_LOCALE: fr
+      JAVA_TOOL_OPTIONS: ${METABASE_JAVA_OPTS:--Xmx1g}
+    ports:
+      - "127.0.0.1:${METABASE_PORT:-3001}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:3000/api/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 30
+      start_period: 90s
+
+  # Rejoue par API les clics de configuration : compte administrateur,
+  # connexion à PostgreSQL, questions et dashboard. Idempotent, puis s'arrête.
+  metabase-init:
+    build: ./dataviz
+    container_name: tmdb_metabase_init
+    restart: "no"
+    depends_on:
+      metabase:
+        condition: service_healthy
+    environment:
+      METABASE_URL: http://metabase:3000
+      METABASE_PUBLIC_URL: http://localhost:${METABASE_PORT:-3001}
+      METABASE_EMAIL: ${METABASE_EMAIL:-admin@tp2.local}
+      METABASE_PASSWORD: ${METABASE_PASSWORD:-TP2metabase!}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: ${POSTGRES_DB:-tmdb}
+      POSTGRES_USER: ${POSTGRES_USER:-tmdb}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tmdb}
 
 volumes:
   pgdata:

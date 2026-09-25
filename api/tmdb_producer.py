@@ -71,7 +71,7 @@ def load_settings() -> Settings:
         token=os.getenv("TMDB_READ_ACCESS_TOKEN", ""),
         language=os.getenv("TMDB_LANGUAGE", "fr-FR"),
         lists=[name.strip() for name in lists.split(",") if name.strip()],
-        max_pages=int(os.getenv("TMDB_MAX_PAGES", "10")),
+        max_pages=int(os.getenv("TMDB_MAX_PAGES", "5")),
         max_movies=int(os.getenv("TMDB_MAX_MOVIES", "0")),
         interval_seconds=float(os.getenv("TMDB_POLL_INTERVAL_SECONDS", "1.0")),
         bootstrap=os.getenv("KAFKA_BOOTSTRAP", "kafka:9092"),
