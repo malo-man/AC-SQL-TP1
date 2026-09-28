@@ -250,7 +250,7 @@
     },
     {
       "type": "stat",
-      "title": "Contrôles au-dessus du seuil",
+      "title": "Contrôles à traiter",
       "id": 5,
       "gridPos": {
         "x": 16,
@@ -259,16 +259,18 @@
         "h": 4
       },
       "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
+        "type": "grafana-postgresql-datasource",
+        "uid": "postgres-mart"
       },
       "targets": [
         {
-          "expr": "pipeline_dq_dimension_controls{dimension=\"global\",phase=\"après\"} - pipeline_dq_dimension_controls_passed{dimension=\"global\",phase=\"après\"}",
           "refId": "A",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT count(*) AS \"à traiter\" FROM dq.v_results_last WHERE verdict = 'à traiter'",
           "datasource": {
-            "type": "prometheus",
-            "uid": "prometheus"
+            "type": "grafana-postgresql-datasource",
+            "uid": "postgres-mart"
           }
         }
       ],
@@ -308,7 +310,7 @@
         "justifyMode": "auto",
         "orientation": "auto"
       },
-      "description": "Contrôles dont le taux d'anomalies après nettoyage dépasse le seuil toléré : doit rester à 0."
+      "description": "Contrôles encore en anomalie après nettoyage sans que la matrice justifie leur conservation : doit rester à 0. Un contrôle conservé peut dépasser son seuil : c'est alors la source qui est en cause, pas le nettoyage."
     },
     {
       "type": "stat",

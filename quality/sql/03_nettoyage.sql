@@ -8,7 +8,7 @@
 --   2. invalider les valeurs impossibles (substitution par NULL) ;
 --   3. imputer ce qu'une autre source connaît ;
 --   4. recalculer les colonnes dérivées ;
---   5. supprimer doublons, liaisons obsolètes puis orphelins.
+--   5. supprimer liaisons obsolètes, doublons puis orphelins.
 --
 -- Pourquoi un schéma à part plutôt que corriger le mart :
 --   - le mart est réécrit par UPSERT à chaque cycle du pipeline, une
@@ -185,23 +185,17 @@ SELECT dq.fix('COH-04', 'correction', 'movies', 'votes_ratio',
               't.votes_ratio IS DISTINCT FROM round(t.vote_count::numeric / nullif(t.imdb_num_votes, 0), 4)');
 
 -- ---------------------------------------------------------------------
--- 5. Suppressions : doublons, liaisons obsolètes, puis orphelins
+-- 5. Suppressions : liaisons obsolètes, doublons, puis orphelins
 --
--- L'ordre compte : retirer une liaison peut rendre orphelin un genre, une
--- saga ou une personne, qui est alors supprimé à l'étape suivante.
+-- L'ordre compte :
+--   - les liaisons obsolètes partent avant le dédoublonnage. Quand TMDB
+--     recrée un crédit, l'ancien reste dans le mart à côté du nouveau et
+--     forme un faux doublon ; dédoublonner d'abord peut garder l'ancien, que
+--     l'étape suivante supprime : le rôle disparaîtrait. Cas réel relevé
+--     dans le journal des corrections au premier audit ;
+--   - retirer une liaison peut rendre orphelin un genre, une saga ou une
+--     personne, qui est alors supprimé en dernier.
 -- ---------------------------------------------------------------------
-
--- Crédits en double : même rôle ou même poste sous deux credit_id.  UNI-04/05
-SELECT dq.remove('UNI-04', 'movie_cast',
-                 $$t.credit_id IN (SELECT credit_id FROM (
-                       SELECT credit_id, row_number() OVER (PARTITION BY movie_id, person_id, character
-                                                            ORDER BY cast_order NULLS LAST, credit_id) AS rn
-                         FROM curated.movie_cast) d WHERE d.rn > 1)$$);
-SELECT dq.remove('UNI-05', 'movie_crew',
-                 $$t.credit_id IN (SELECT credit_id FROM (
-                       SELECT credit_id, row_number() OVER (PARTITION BY movie_id, person_id, job
-                                                            ORDER BY credit_id) AS rn
-                         FROM curated.movie_crew) d WHERE d.rn > 1)$$);
 
 -- Liaisons obsolètes : le chargement du TP2 ajoute les liaisons d'un film
 -- sans retirer celles qui ont disparu chez TMDB. Le dernier chargement
@@ -230,6 +224,18 @@ SELECT dq.remove('COH-09', 'movie_cast',
 SELECT dq.remove('COH-09', 'movie_crew',
                  $$t.movie_id IN (SELECT id FROM mart._stg_movies)
                    AND NOT EXISTS (SELECT 1 FROM mart._stg_movie_crew s WHERE s.credit_id = t.credit_id)$$);
+
+-- Crédits en double : même rôle ou même poste sous deux credit_id.  UNI-04/05
+SELECT dq.remove('UNI-04', 'movie_cast',
+                 $$t.credit_id IN (SELECT credit_id FROM (
+                       SELECT credit_id, row_number() OVER (PARTITION BY movie_id, person_id, character
+                                                            ORDER BY cast_order NULLS LAST, credit_id) AS rn
+                         FROM curated.movie_cast) d WHERE d.rn > 1)$$);
+SELECT dq.remove('UNI-05', 'movie_crew',
+                 $$t.credit_id IN (SELECT credit_id FROM (
+                       SELECT credit_id, row_number() OVER (PARTITION BY movie_id, person_id, job
+                                                            ORDER BY credit_id) AS rn
+                         FROM curated.movie_crew) d WHERE d.rn > 1)$$);
 
 -- Liaisons orphelines : garanties absentes par les clés étrangères du mart,
 -- supprimées si elles apparaissaient.                             INT-01
