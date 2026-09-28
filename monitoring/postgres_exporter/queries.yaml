@@ -60,3 +60,66 @@ pipeline_load_run:
     - success:
         usage: "GAUGE"
         description: "1 si la dernière exécution a réussi"
+
+# Contrôle qualité (TP3) : bilan de chaque contrôle à la dernière exécution
+# de l'étape quality, avant (mart) et après (curated) nettoyage. Les vues
+# dq.* n'existent qu'après le premier passage de l'étape : d'ici là, ces deux
+# requêtes échouent sans gêner les autres métriques.
+pipeline_dq_control:
+  query: >
+    SELECT r.control_id, c.dimension, c.severity, r.phase,
+           r.anomaly_rows::float                 AS anomalies,
+           coalesce(r.anomaly_rate, 0)::float    AS anomaly_rate,
+           coalesce(r.passed, true)::int::float  AS passed
+    FROM dq.v_last_run l
+    JOIN dq.results r  ON r.run_id = l.run_id
+    JOIN dq.controls c ON c.control_id = r.control_id
+  master: true
+  metrics:
+    - control_id:
+        usage: "LABEL"
+        description: "Identifiant du contrôle dans la matrice (ex. VAL-13)"
+    - dimension:
+        usage: "LABEL"
+        description: "Complétude, unicité, validité, cohérence ou intégrité"
+    - severity:
+        usage: "LABEL"
+        description: "Sévérité : critique, majeure, mineure ou info"
+    - phase:
+        usage: "LABEL"
+        description: "avant (mart) ou après (curated) nettoyage"
+    - anomalies:
+        usage: "GAUGE"
+        description: "Lignes en anomalie"
+    - anomaly_rate:
+        usage: "GAUGE"
+        description: "Part des lignes contrôlées en anomalie"
+    - passed:
+        usage: "GAUGE"
+        description: "1 si le taux d'anomalies est sous le seuil toléré"
+
+# Score par dimension (100 = aucune anomalie) et nombre de contrôles sous le seuil.
+pipeline_dq_dimension:
+  query: >
+    SELECT coalesce(dimension, 'global') AS dimension, phase,
+           score::float           AS score,
+           controls::float        AS controls,
+           controls_passed::float AS controls_passed
+    FROM dq.v_dimension_scores
+  master: true
+  metrics:
+    - dimension:
+        usage: "LABEL"
+        description: "Dimension de qualité, ou global"
+    - phase:
+        usage: "LABEL"
+        description: "avant (mart) ou après (curated) nettoyage"
+    - score:
+        usage: "GAUGE"
+        description: "Moyenne des taux de conformité des contrôles, en %"
+    - controls:
+        usage: "GAUGE"
+        description: "Contrôles évaluables"
+    - controls_passed:
+        usage: "GAUGE"
+        description: "Contrôles sous leur seuil toléré"
