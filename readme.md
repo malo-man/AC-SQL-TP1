@@ -38,7 +38,7 @@ Aucune dépendance Python n'est à installer sur la machine : tout s'exécute en
 
 ```bash
 cp .env.example .env
-# renseigner TMDB_READ_ACCESS_TOKEN dans .env
+# renseigner TMDB_READ_ACCESS_TOKEN dans .env (troisième ligne du fichier)
 docker compose up -d
 ```
 
