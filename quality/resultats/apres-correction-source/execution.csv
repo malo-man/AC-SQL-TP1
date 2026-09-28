@@ -1,0 +1,2 @@
+run_id,started_at,finished_at,mart_ingest_date,mart_movies,curated_movies,anomalies_before,anomalies_after,corrections
+7ace946b-4025-458a-b3b3-f45b42b6dc6b,2026-09-28 08:28:58.367794+00,2026-09-28 08:29:01.901486+00,2026-09-28,619,619,28258,28250,8

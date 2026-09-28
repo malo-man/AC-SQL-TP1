@@ -1,0 +1,113 @@
+=== 1. Exécution
+                run_id                |          started_at           |      duree      | mart_ingest_date | mart_movies | curated_movies | anomalies_before | anomalies_after | corrections 
+--------------------------------------+-------------------------------+-----------------+------------------+-------------+----------------+------------------+-----------------+-------------
+ 7ace946b-4025-458a-b3b3-f45b42b6dc6b | 2026-09-28 08:28:58.367794+00 | 00:00:03.533692 | 2026-09-28       |         619 |            619 |            28258 |           28250 |           8
+(1 row)
+
+=== 2. Verdicts
+     verdict      | controles | anomalies_avant | anomalies_apres 
+------------------+-----------+-----------------+-----------------
+ conforme         |        33 |               0 |               0
+ résiduel accepté |        16 |           28258 |           28250
+(2 rows)
+
+=== 3. Anomalies détectées, par priorité (sévérité x taux)
+ control_id | severity |                               rule                               | avant | % avant | apres | % apres |  treatment   |     verdict      
+------------+----------+------------------------------------------------------------------+-------+---------+-------+---------+--------------+------------------
+ COM-05     | info     | Budget et recettes connus                                        |   302 |   48.79 |   302 |   48.79 | conservation | résiduel accepté
+ COM-09     | info     | Genre de la personne connu                                       | 27586 |   44.30 | 27586 |   44.30 | conservation | résiduel accepté
+ COM-04     | mineure  | Synopsis renseigné                                               |   106 |   17.12 |   106 |   17.12 | conservation | résiduel accepté
+ COM-11     | majeure  | Film doté d'un identifiant IMDb rapproché d'une note IMDb        |    47 |    7.81 |    47 |    7.81 | conservation | résiduel accepté
+ COH-05     | majeure  | Un film « Released » a une date de sortie passée                 |    29 |    4.95 |    29 |    4.95 | conservation | résiduel accepté
+ COM-10     | info     | Pays d'origine de la société connu                               |   127 |    8.84 |   127 |    8.84 | conservation | résiduel accepté
+ COM-01     | majeure  | Identifiant IMDb renseigné                                       |    17 |    2.75 |    17 |    2.75 | conservation | résiduel accepté
+ COM-03     | mineure  | Durée renseignée                                                 |    23 |    3.72 |    15 |    2.42 | imputation   | résiduel accepté
+ COM-06     | mineure  | Tout film a au moins un genre                                    |     3 |    0.48 |     3 |    0.48 | conservation | résiduel accepté
+ COH-07     | mineure  | Durées TMDB et IMDb proches (écart de 30 minutes au plus)        |     2 |    0.36 |     2 |    0.35 | conservation | résiduel accepté
+ COH-08     | mineure  | Années de sortie TMDB et IMDb proches (1 an d'écart au plus)     |     2 |    0.35 |     2 |    0.35 | conservation | résiduel accepté
+ COM-07     | mineure  | Tout film a un casting                                           |     2 |    0.32 |     2 |    0.32 | conservation | résiduel accepté
+ COM-08     | mineure  | Tout film a un réalisateur                                       |     2 |    0.32 |     2 |    0.32 | conservation | résiduel accepté
+ UNI-06     | info     | Pas deux entrées de référentiel de même nom                      |     8 |    0.50 |     8 |    0.50 | conservation | résiduel accepté
+ COM-02     | majeure  | Date de sortie renseignée                                        |     1 |    0.16 |     1 |    0.16 | conservation | résiduel accepté
+ INT-06     | info     | Pays d'origine des sociétés présent dans le référentiel des pays |     1 |    0.08 |     1 |    0.08 | conservation | résiduel accepté
+(16 rows)
+
+=== 4. Score par dimension (moyenne des taux de conformité des contrôles)
+ dimension  | score_avant | score_apres | sous_seuil_avant | sous_seuil_apres 
+------------+-------------+-------------+------------------+------------------
+ cohérence  |       99.43 |       99.44 | 9/10             | 9/10
+ complétude |       87.76 |       87.88 | 9/11             | 9/11
+ intégrité  |       99.99 |       99.99 | 6/6              | 6/6
+ unicité    |       99.92 |       99.92 | 6/6              | 6/6
+ validité   |      100.00 |      100.00 | 16/16            | 16/16
+ global     |       97.13 |       97.15 | 46/49            | 46/49
+(6 rows)
+
+=== 5. Corrections appliquées
+   action   | controles | lignes 
+------------+-----------+--------
+ imputation |         1 |      8
+(1 row)
+
+ control_id |   action   | table_name | column_name | rows_corrected 
+------------+------------+------------+-------------+----------------
+ COM-03     | imputation | movies     | runtime     |              8
+(1 row)
+
+=== 6. Volumes par table
+         table_name         |       kind        | mart_rows | curated_rows | delta 
+----------------------------+-------------------+-----------+--------------+-------
+ genres                     | référentiel       |        19 |           19 |     0
+ collections                | référentiel       |       131 |          131 |     0
+ production_companies       | référentiel       |      1437 |         1437 |     0
+ countries                  | référentiel       |        63 |           63 |     0
+ languages                  | référentiel       |        61 |           61 |     0
+ people                     | entité            |     62267 |        62267 |     0
+ movies                     | entité            |       619 |          619 |     0
+ movie_genres               | liaison           |      1566 |         1566 |     0
+ movie_production_companies | liaison           |      2111 |         2111 |     0
+ movie_production_countries | liaison           |       909 |          909 |     0
+ movie_spoken_languages     | liaison           |       890 |          890 |     0
+ movie_cast                 | relation porteuse |     23054 |        23054 |     0
+ movie_crew                 | relation porteuse |     60336 |        60336 |     0
+(13 rows)
+
+=== 7. Effet sur les indicateurs
+        indicator        |   mart   | curated  | delta 
+-------------------------+----------+----------+-------
+ films                   |      619 |      619 |     0
+ films notés TMDB        |      545 |      545 |     0
+ note TMDB moyenne       |    7.457 |    7.457 | 0.000
+ note IMDb moyenne       |    7.062 |    7.062 | 0.000
+ écart TMDB - IMDb moyen |    0.400 |    0.400 | 0.000
+ couverture IMDb (%)     |    89.66 |    89.66 |  0.00
+ films avec durée        |      596 |      604 |     8
+ films avec budget       |      340 |      340 |     0
+ budget moyen (USD)      | 60061400 | 60061400 |     0
+ films datés             |      618 |      618 |     0
+(10 rows)
+
+=== 8. Effet sur la note moyenne par genre (dashboard TP2)
+      genre      | films_mart | films_curated | note_tmdb_mart | note_tmdb_curated | effet_note_tmdb | ecart_mart | ecart_curated 
+-----------------+------------+---------------+----------------+-------------------+-----------------+------------+---------------
+ Drame           |        277 |           277 |          7.731 |             7.731 |           0.000 |      0.282 |         0.282
+ Comédie         |        147 |           147 |          7.169 |             7.169 |           0.000 |      0.393 |         0.393
+ Action          |        147 |           147 |          7.482 |             7.482 |           0.000 |      0.598 |         0.598
+ Thriller        |        138 |           138 |          7.139 |             7.139 |           0.000 |      0.648 |         0.648
+ Aventure        |        128 |           128 |          7.609 |             7.609 |           0.000 |      0.355 |         0.355
+ Animation       |        108 |           108 |          7.811 |             7.811 |           0.000 |      0.420 |         0.420
+ Fantastique     |         96 |            96 |          7.661 |             7.661 |           0.000 |      0.387 |         0.387
+ Science-Fiction |         86 |            86 |          7.363 |             7.363 |           0.000 |      0.266 |         0.266
+ Crime           |         79 |            79 |          7.501 |             7.501 |           0.000 |      0.384 |         0.384
+ Romance         |         79 |            79 |          7.584 |             7.584 |           0.000 |      0.652 |         0.652
+ Familial        |         76 |            76 |          7.577 |             7.577 |           0.000 |      0.489 |         0.489
+ Horreur         |         74 |            74 |          6.542 |             6.542 |           0.000 |      0.471 |         0.471
+ Mystère         |         39 |            39 |          7.292 |             7.292 |           0.000 |      0.353 |         0.353
+ Histoire        |         28 |            28 |          7.730 |             7.730 |           0.000 |      0.122 |         0.122
+ Guerre          |         26 |            26 |          8.053 |             8.053 |           0.000 |      0.107 |         0.107
+ Musique         |         21 |            21 |          8.082 |             8.082 |           0.000 |      0.334 |         0.334
+ Documentaire    |         11 |            11 |          7.620 |             7.620 |           0.000 |      0.053 |         0.053
+ Téléfilm        |          3 |             3 |          7.450 |             7.450 |           0.000 |      1.400 |         1.400
+ Western         |          3 |             3 |          8.330 |             8.330 |           0.000 |     -0.270 |        -0.270
+(19 rows)
+

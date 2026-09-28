@@ -1,4 +1,4 @@
-"""Socle commun aux jobs PySpark : configuration, session Spark, audit des exécutions."""
+"""Socle commun aux jobs PySpark : configuration, session Spark, nettoyage, audit des exécutions."""
 
 import logging
 import os
@@ -12,7 +12,8 @@ from pathlib import Path
 from types import TracebackType
 
 import psycopg
-from pyspark.sql import SparkSession
+from pyspark.sql import Column, SparkSession
+from pyspark.sql import functions as F
 
 JDBC_JAR = "/opt/jars/postgresql.jar"
 
@@ -102,6 +103,17 @@ def build_session(app_name: str) -> SparkSession:
     )
     session.sparkContext.setLogLevel("WARN")
     return session
+
+
+# ---------------------------------------------------------------------
+# Nettoyage
+# ---------------------------------------------------------------------
+
+
+def blank_to_null(column: Column) -> Column:
+    """TMDB renvoie une chaîne vide pour un champ non renseigné : c'est un NULL."""
+    trimmed = F.trim(column)
+    return F.when(trimmed == "", None).otherwise(trimmed)
 
 
 # ---------------------------------------------------------------------

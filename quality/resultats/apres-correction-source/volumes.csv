@@ -1,0 +1,14 @@
+table_name,kind,mart_rows,curated_rows,delta
+genres,référentiel,19,19,0
+collections,référentiel,131,131,0
+production_companies,référentiel,1437,1437,0
+countries,référentiel,63,63,0
+languages,référentiel,61,61,0
+people,entité,62267,62267,0
+movies,entité,619,619,0
+movie_genres,liaison,1566,1566,0
+movie_production_companies,liaison,2111,2111,0
+movie_production_countries,liaison,909,909,0
+movie_spoken_languages,liaison,890,890,0
+movie_cast,relation porteuse,23054,23054,0
+movie_crew,relation porteuse,60336,60336,0

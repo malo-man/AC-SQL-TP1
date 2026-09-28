@@ -27,6 +27,7 @@ from pyspark.sql.window import Window
 from common import (
     LoadRun,
     Settings,
+    blank_to_null,
     build_session,
     has_data,
     latest_partition,
@@ -40,15 +41,27 @@ from schemas import ENVELOPE, TITLE_BASICS, TITLE_RATINGS
 JOB = "aggregate"
 
 
-def blank_to_null(column: Column) -> Column:
-    """TMDB renvoie une chaîne vide pour un champ non renseigné : c'est un NULL."""
-    trimmed = F.trim(column)
-    return F.when(trimmed == "", None).otherwise(trimmed)
-
-
 def positive_or_null(column: Column) -> Column:
-    """Chez TMDB, 0 signifie « inconnu » pour un budget, une recette ou une durée."""
+    """Chez TMDB, 0 signifie « inconnu » pour une durée."""
     return F.when(column > 0, column)
+
+
+def amount_or_null(column: Column) -> Column:
+    """Montant en USD : 0 signifie « inconnu », et quelques dollars une saisie en
+    millions ou une valeur de remplissage (contrôle VAL-10 du TP3). Le multiplier
+    serait une supposition : sous 1 000 USD, le montant est inconnu."""
+    return F.when(column >= 1000, column)
+
+
+def rating_or_null(average: Column, count: Column) -> Column:
+    """Note arrondie comme en base, et seulement si quelqu'un a voté.
+
+    TMDB affiche 0 quand personne n'a voté : ce n'est pas une note, et elle
+    faussait les moyennes par genre (contrôle COH-01 du TP3). L'arrondi à deux
+    décimales est fait ici, avant le calcul de l'écart avec IMDb, pour que
+    rating_gap corresponde exactement aux notes stockées (contrôle COH-03).
+    """
+    return F.when(F.coalesce(count, F.lit(0)) > 0, F.round(average, 2))
 
 
 def read_raw_tmdb(spark: SparkSession, settings: Settings) -> DataFrame:
@@ -138,10 +151,10 @@ def clean_movies(deduplicated: DataFrame) -> DataFrame:
         blank_to_null(payload["status"]).alias("status"),
         F.to_date(blank_to_null(payload["release_date"])).alias("release_date"),
         positive_or_null(payload["runtime"]).alias("runtime"),
-        positive_or_null(payload["budget"]).alias("budget"),
-        positive_or_null(payload["revenue"]).alias("revenue"),
+        amount_or_null(payload["budget"]).alias("budget"),
+        amount_or_null(payload["revenue"]).alias("revenue"),
         payload["popularity"].alias("popularity"),
-        payload["vote_average"].alias("vote_average"),
+        rating_or_null(payload["vote_average"], payload["vote_count"]).alias("vote_average"),
         payload["vote_count"].alias("vote_count"),
         F.coalesce(payload["adult"], F.lit(False)).alias("adult"),
         blank_to_null(payload["homepage"]).alias("homepage"),
