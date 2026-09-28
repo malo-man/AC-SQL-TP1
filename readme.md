@@ -1,16 +1,20 @@
 # Plateforme Data TMDB × IMDb
 
-Projet en deux temps autour d'un même sujet métier, le cinéma :
+Projet en trois temps autour d'un même sujet métier, le cinéma :
 
-- **TP1 — Audit, cartographie et modélisation** ([sujet.md](sujet.md)) : étude des sources,
+- **TP1 — Audit, cartographie et modélisation** ([sujet1.md](sujet1.md)) : étude des sources,
   dictionnaire de données, MCD/MLD, schéma PostgreSQL et application d'import.
 - **TP2 — Pipeline temps réel et plateforme Data** ([sujet2.md](sujet2.md)) : la même
   modélisation transformée en plateforme automatisée et observable.
+- **TP3 — Audit qualité et nettoyage des données** ([sujet3.md](sujet3.md)) : matrice de
+  contrôles, audit SQL, nettoyage vers un schéma cible et recontrôle, intégrés au pipeline.
+  Tout est dans [quality/](quality/README.md).
 
 ```
 API TMDB ──► producer ──► Kafka ──► writer ──┐
                                              ├──► Data Lake ──► PySpark ──► PostgreSQL ──► Metabase
-Datasets IMDb ──► fetcher ───────────────────┘
+Datasets IMDb ──► fetcher ───────────────────┘                                │
+                                                          contrôle qualité ◄──┘ (TP3)
                                         Prometheus ──► Grafana
 ```
 
@@ -58,10 +62,10 @@ Tous les ports sont publiés sur `127.0.0.1` uniquement.
 
 | Service | URL | Identifiants | Rôle |
 |---|---|---|---|
-| **Metabase** | http://localhost:3001 | `admin@tp2.local` / `TP2metabase!` | Data Viz : dashboard « Pipeline TMDB × IMDb » |
-| **Grafana** | http://localhost:3000 | `admin` / `admin` | Supervision : 3 dashboards dans le dossier TP2 |
+| **Metabase** | http://localhost:3001 | `admin@tp2.local` / `TP2metabase!` | Data Viz : dashboards « Pipeline TMDB × IMDb » et « Qualité des données » |
+| **Grafana** | http://localhost:3000 | `admin` / `admin` | Supervision : 4 dashboards dans le dossier TP2, dont « TP3 — Qualité des données » |
 | **Prometheus** | http://localhost:9090 | — | Métriques brutes et état des cibles |
-| PostgreSQL | `localhost:5433` | `tmdb` / `tmdb` | Base `tmdb`, schémas `public` (TP1) et `mart` (TP2) |
+| PostgreSQL | `localhost:5433` | `tmdb` / `tmdb` | Base `tmdb`, schémas `public` (TP1), `mart` (TP2), `curated` et `dq` (TP3) |
 | cAdvisor | http://localhost:8081 | — | Métriques des conteneurs |
 | Exporters | `:9100` `:9101` `:9102` `:9103` `:9104` `:9187` | — | `/metrics` de chaque service |
 
@@ -144,6 +148,23 @@ curl -s 'localhost:9090/api/v1/query?query=pipeline_raw_rows'
 curl -s 'localhost:9090/api/v1/query?query=pipeline_clean_rows'
 ```
 
+### 8. Contrôler — la qualité est auditée à chaque cycle (TP3)
+
+Après chaque chargement, l'ordonnanceur passe les 49 contrôles de la matrice sur le mart,
+construit le schéma nettoyé `curated`, puis repasse les mêmes contrôles dessus.
+
+```bash
+# Déclencher l'audit sans attendre et archiver ses résultats dans quality/resultats/
+quality/run.sh
+
+docker compose exec postgres psql -U tmdb -d tmdb \
+    -c "SELECT verdict, count(*) FROM dq.v_results_last GROUP BY 1" \
+    -c "SELECT * FROM dq.v_kpi_impact"
+```
+
+http://localhost:3001 → dashboard **Qualité des données** ; http://localhost:3000 → **TP3 —
+Qualité des données**. Documentation : [quality/README.md](quality/README.md).
+
 ## Profils de données
 
 | | Léger (par défaut) | Complet |
@@ -173,6 +194,9 @@ docker compose up -d --build <service>     # après modification du code
 
 # Volume occupé par le Data Lake
 docker compose exec datalake-writer du -sh /datalake/raw /datalake/aggregated
+
+# Audit qualité à la demande, résultats dans quality/resultats/ (TP3)
+quality/run.sh
 
 # Exécuter les jobs Spark sur les fixtures, sans réseau (voir fixtures/README.md)
 docker compose run --rm --no-deps -v "$PWD/fixtures/datalake:/fixtures" \
@@ -216,3 +240,5 @@ python main.py
 - [Datasets IMDb (source 2)](https://developer.imdb.com/non-commercial-datasets/) — voir [source2/README.md](source2/README.md)
 - [Organisation du Data Lake](datalake/README.md)
 - [Choix techniques et fonctionnement](docs/choix-techniques.md)
+- [Qualité des données (TP3)](quality/README.md) — [cartographie](quality/cartographie.md),
+  [matrice](quality/matrice-controles.md), [rapport d'audit](quality/rapport-audit.md)

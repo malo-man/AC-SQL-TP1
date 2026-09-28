@@ -41,6 +41,7 @@ Seize services, tous décrits dans un unique `docker-compose.yml`, dont quatre �
 ├── dataviz/                 Metabase : questions et provisionnement par API
 ├── monitoring/              Prometheus, Grafana, exporter du Data Lake
 ├── fixtures/                mini Data Lake pour exécuter les jobs sans réseau
+├── quality/                 TP3 : matrice, scripts SQL d'audit et de nettoyage, résultats
 ├── docs/                    schéma d'architecture et ce document
 ├── tmdb_app/ et main.py     application interactive du TP1, inchangée
 └── images/                  MCD et MLD du TP1
@@ -84,7 +85,8 @@ les deux temporalités, Spark les rapproche.
 | Stocker | `datalake-writer` (`datalake/`) | Écrit les messages en JSON Lines gzip dans `raw/tmdb`, avec un manifeste |
 | Collecter (2) | `imdb-fetcher` (`source2/`) | Dépose le TSV IMDb tel quel dans `raw/imdb` |
 | Agréger et transformer | `aggregate.py` (`spark/`) | Nettoie, dédoublonne, rapproche les deux sources, écrit `aggregated/` en Parquet |
-| Charger | `load_mart.py` (`spark/`) | Éclate l'instantané en 13 tables et les charge par UPSERT dans le schéma `mart` |
+| Charger | `load_mart.py` (`spark/`) | Éclate l'instantané en 13 tables et les charge par UPSERT dans le schéma `mart`, retire les liaisons disparues de la source et les orphelins |
+| Contrôler (TP3) | `quality.py` (`spark/`), `quality/sql/` | Passe la matrice de 49 contrôles sur le mart, construit le schéma nettoyé `curated`, recontrôle |
 | Visualiser | `metabase` | 6 questions SQL sur les vues du mart, réunies dans un dashboard |
 | Superviser | `prometheus`, `grafana` | Métriques de tous les services, dont l'indicateur Raw vs Clean |
 
@@ -269,3 +271,20 @@ et collecte plusieurs fois le même film.
 | docker-compose.yml | à la racine, 16 services |
 | Dockerfiles et configurations | `api/`, `datalake/`, `source2/`, `spark/`, `dataviz/`, `monitoring/` |
 | Volumes et persistance | `pgdata`, `datalake`, `kafkadata`, `producer_state`, `prometheusdata`, `grafanadata` |
+
+## 11. Qualité des données (TP3)
+
+Le TP3 ajoute une troisième étape au pipeline, après le chargement : `spark/quality.py` exécute
+les scripts SQL de [`quality/sql/`](../quality/sql/) dans une seule transaction, sous le même
+verrou que les deux jobs Spark.
+
+- Le schéma **`dq`** porte la matrice de contrôles sous forme de données, les résultats de chaque
+  exécution (avant et après nettoyage) et le journal ligne à ligne des corrections.
+- Le schéma **`curated`** est une copie nettoyée du mart, recréée à chaque passage, sur laquelle
+  les contraintes du schéma cible sont posées après coup : leur création valide chaque ligne.
+- Le mart n'est pas corrigé par ces scripts, il est réécrit toutes les cinq minutes. Les
+  corrections durables ont été **remontées dans `aggregate.py` et `load_mart.py`** : note NULL
+  sans vote, textes et codes vides en NULL, genre 0 en NULL, montants symboliques ignorés,
+  liaisons disparues de la source retirées au chargement, orphelins purgés.
+
+Choix détaillés, fonctionnement et limites : [quality/README.md](../quality/README.md).
