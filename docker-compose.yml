@@ -291,9 +291,9 @@ services:
   # Traitement — PySpark
   # ===================================================================
 
-  # Agrégation puis chargement, relancés en boucle. Les deux jobs sortent
-  # proprement quand le lac est encore vide : le service ne boucle donc pas en
-  # erreur pendant les premières minutes suivant un "up".
+  # Agrégation, chargement puis contrôle qualité (TP3), relancés en boucle.
+  # Les jobs sortent proprement quand le lac est encore vide : le service ne
+  # boucle donc pas en erreur pendant les premières minutes suivant un "up".
   spark-jobs:
     build: ./spark
     container_name: tmdb_spark_jobs
@@ -316,6 +316,8 @@ services:
     volumes:
       # Lecture des zones brutes et écriture de la zone agrégée
       - datalake:/datalake
+      # Scripts SQL du contrôle qualité, joués par quality.py
+      - ./quality/sql:/quality/sql:ro
 
   # ===================================================================
   # Data Visualization

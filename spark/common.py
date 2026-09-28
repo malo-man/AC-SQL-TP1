@@ -148,7 +148,7 @@ PIPELINE_LOCK_KEY = zlib.crc32(b"tp2-pipeline")
 
 
 @contextmanager
-def pipeline_lock(settings: Settings, job: str) -> Iterator[bool]:
+def pipeline_lock(settings: Settings, job: str, wait_seconds: float = 0) -> Iterator[bool]:
     """Empêche deux exécutions simultanées d'un job du pipeline.
 
     Les jobs partagent un état global : la partition Parquet du jour, réécrite
@@ -160,10 +160,22 @@ def pipeline_lock(settings: Settings, job: str) -> Iterator[bool]:
 
     Le verrou consultatif est tenu par la connexion : il est libéré même si le
     processus est tué, sans rien laisser à nettoyer.
+
+    Par défaut, un job qui trouve le verrou pris s'efface aussitôt. Avec
+    wait_seconds, il attend la fin du job en cours, dans cette limite.
     """
     key = PIPELINE_LOCK_KEY
     with psycopg.connect(settings.conninfo, autocommit=True) as conn:
-        acquired = conn.execute("SELECT pg_try_advisory_lock(%s)", (key,)).fetchone()[0]
+        if wait_seconds > 0:
+            # lock_timeout borne aussi l'attente d'un verrou consultatif
+            conn.execute("SELECT set_config('lock_timeout', %s, false)", (f"{int(wait_seconds * 1000)}ms",))
+            try:
+                conn.execute("SELECT pg_advisory_lock(%s)", (key,))
+                acquired = True
+            except psycopg.errors.LockNotAvailable:
+                acquired = False
+        else:
+            acquired = conn.execute("SELECT pg_try_advisory_lock(%s)", (key,)).fetchone()[0]
         try:
             yield acquired
         finally:
