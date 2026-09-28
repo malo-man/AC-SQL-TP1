@@ -1,0 +1,190 @@
+=== 1. Sources et volumes par couche (dernière exécution de chaque job)
+    job    | status  | ingest_date | raw_rows_in | distinct_movies_in | clean_rows_out | rejected_rows | imdb_matched | duration_s |          finished_at          
+-----------+---------+-------------+-------------+--------------------+----------------+---------------+--------------+------------+-------------------------------
+ aggregate | success | 2026-09-28  |        6209 |                619 |            619 |             0 |          555 |       29.2 | 2026-09-28 08:20:23.956866+00
+ load_mart | success | 2026-09-28  |         619 |                619 |            619 |             0 |          555 |       15.4 | 2026-09-28 08:20:39.529005+00
+ quality   | success | 2026-09-28  |         619 |                619 |            619 |             0 |          555 |        4.2 | 2026-09-28 08:22:44.477089+00
+(3 rows)
+
+=== 2. Tables par schéma : TP1 (public), TP2 (mart), TP3 (curated)
+         table_name         |       kind        | public_rows | mart_rows | curated_rows | mart_columns 
+----------------------------+-------------------+-------------+-----------+--------------+--------------
+ genres                     | référentiel       |          11 |        19 |           19 |            2
+ collections                | référentiel       |           4 |       132 |          131 |            4
+ production_companies       | référentiel       |          57 |      1437 |         1437 |            4
+ countries                  | référentiel       |           8 |        63 |           63 |            2
+ languages                  | référentiel       |           5 |        61 |           61 |            3
+ people                     | entité            |        2409 |     62270 |        62267 |            7
+ movies                     | entité            |          20 |       619 |          619 |           31
+ movie_genres               | liaison           |          51 |      1567 |         1566 |            2
+ movie_production_companies | liaison           |          60 |      2111 |         2111 |            2
+ movie_production_countries | liaison           |          29 |       909 |          909 |            2
+ movie_spoken_languages     | liaison           |          22 |       891 |          890 |            2
+ movie_cast                 | relation porteuse |         652 |     23061 |        23054 |            5
+ movie_crew                 | relation porteuse |        1923 |     60340 |        60336 |            5
+(13 rows)
+
+=== 3. Colonnes du mart : types réels
+         table_name         |     column_name      |           type           | nullable | default_value 
+----------------------------+----------------------+--------------------------+----------+---------------
+ genres                     | id                   | integer                  | NOT NULL | 
+ genres                     | name                 | text                     | NOT NULL | 
+ collections                | id                   | integer                  | NOT NULL | 
+ collections                | name                 | text                     | NOT NULL | 
+ collections                | poster_path          | text                     |          | 
+ collections                | backdrop_path        | text                     |          | 
+ production_companies       | id                   | integer                  | NOT NULL | 
+ production_companies       | name                 | text                     | NOT NULL | 
+ production_companies       | origin_country       | character(2)             |          | 
+ production_companies       | logo_path            | text                     |          | 
+ countries                  | iso_3166_1           | character(2)             | NOT NULL | 
+ countries                  | name                 | text                     | NOT NULL | 
+ languages                  | iso_639_1            | character(2)             | NOT NULL | 
+ languages                  | name                 | text                     |          | 
+ languages                  | english_name         | text                     |          | 
+ people                     | id                   | integer                  | NOT NULL | 
+ people                     | name                 | text                     | NOT NULL | 
+ people                     | original_name        | text                     |          | 
+ people                     | gender               | smallint                 |          | 
+ people                     | known_for_department | text                     |          | 
+ people                     | popularity           | numeric(10,3)            |          | 
+ people                     | profile_path         | text                     |          | 
+ movies                     | id                   | integer                  | NOT NULL | 
+ movies                     | imdb_id              | text                     |          | 
+ movies                     | title                | text                     | NOT NULL | 
+ movies                     | original_title       | text                     |          | 
+ movies                     | original_language    | character(2)             |          | 
+ movies                     | overview             | text                     |          | 
+ movies                     | tagline              | text                     |          | 
+ movies                     | status               | text                     |          | 
+ movies                     | release_date         | date                     |          | 
+ movies                     | runtime              | integer                  |          | 
+ movies                     | budget               | bigint                   |          | 
+ movies                     | revenue              | bigint                   |          | 
+ movies                     | popularity           | numeric(10,3)            |          | 
+ movies                     | vote_average         | numeric(4,2)             |          | 
+ movies                     | vote_count           | integer                  |          | 
+ movies                     | adult                | boolean                  | NOT NULL | false
+ movies                     | homepage             | text                     |          | 
+ movies                     | poster_path          | text                     |          | 
+ movies                     | backdrop_path        | text                     |          | 
+ movies                     | collection_id        | integer                  |          | 
+ movies                     | imdb_average_rating  | numeric(3,1)             |          | 
+ movies                     | imdb_num_votes       | integer                  |          | 
+ movies                     | imdb_start_year      | smallint                 |          | 
+ movies                     | imdb_runtime_minutes | integer                  |          | 
+ movies                     | imdb_genres          | text[]                   |          | 
+ movies                     | has_imdb_match       | boolean                  | NOT NULL | false
+ movies                     | rating_gap           | numeric(4,2)             |          | 
+ movies                     | votes_ratio          | numeric(10,4)            |          | 
+ movies                     | source_fetched_at    | timestamp with time zone |          | 
+ movies                     | ingest_date          | date                     |          | 
+ movies                     | loaded_at            | timestamp with time zone | NOT NULL | now()
+ movie_genres               | movie_id             | integer                  | NOT NULL | 
+ movie_genres               | genre_id             | integer                  | NOT NULL | 
+ movie_production_companies | movie_id             | integer                  | NOT NULL | 
+ movie_production_companies | company_id           | integer                  | NOT NULL | 
+ movie_production_countries | movie_id             | integer                  | NOT NULL | 
+ movie_production_countries | country_id           | character(2)             | NOT NULL | 
+ movie_spoken_languages     | movie_id             | integer                  | NOT NULL | 
+ movie_spoken_languages     | language_id          | character(2)             | NOT NULL | 
+ movie_cast                 | credit_id            | text                     | NOT NULL | 
+ movie_cast                 | movie_id             | integer                  | NOT NULL | 
+ movie_cast                 | person_id            | integer                  | NOT NULL | 
+ movie_cast                 | character            | text                     |          | 
+ movie_cast                 | cast_order           | integer                  |          | 
+ movie_crew                 | credit_id            | text                     | NOT NULL | 
+ movie_crew                 | movie_id             | integer                  | NOT NULL | 
+ movie_crew                 | person_id            | integer                  | NOT NULL | 
+ movie_crew                 | department           | text                     |          | 
+ movie_crew                 | job                  | text                     |          | 
+(71 rows)
+
+=== 4. Écarts de structure entre le modèle du TP1 (public) et le mart du TP2
+ table_name |     column_name      |         type_tp1         |         type_tp2         |     ecart      
+------------+----------------------+--------------------------+--------------------------+----------------
+ movies     | fetched_at           | timestamp with time zone |                          | absente du TP2
+ movies     | has_imdb_match       |                          | boolean                  | ajoutée au TP2
+ movies     | imdb_average_rating  |                          | numeric(3,1)             | ajoutée au TP2
+ movies     | imdb_genres          |                          | text[]                   | ajoutée au TP2
+ movies     | imdb_num_votes       |                          | integer                  | ajoutée au TP2
+ movies     | imdb_runtime_minutes |                          | integer                  | ajoutée au TP2
+ movies     | imdb_start_year      |                          | smallint                 | ajoutée au TP2
+ movies     | ingest_date          |                          | date                     | ajoutée au TP2
+ movies     | loaded_at            |                          | timestamp with time zone | ajoutée au TP2
+ movies     | rating_gap           |                          | numeric(4,2)             | ajoutée au TP2
+ movies     | source_fetched_at    |                          | timestamp with time zone | ajoutée au TP2
+ movies     | votes_ratio          |                          | numeric(10,4)            | ajoutée au TP2
+(12 rows)
+
+=== 5. Contraintes du mart : clés primaires, étrangères, unicité
+         table_name         | type |                                     definition                                      
+----------------------------+------+-------------------------------------------------------------------------------------
+ genres                     | PK   | PRIMARY KEY (id)
+ collections                | PK   | PRIMARY KEY (id)
+ production_companies       | PK   | PRIMARY KEY (id)
+ countries                  | PK   | PRIMARY KEY (iso_3166_1)
+ languages                  | PK   | PRIMARY KEY (iso_639_1)
+ people                     | PK   | PRIMARY KEY (id)
+ movies                     | PK   | PRIMARY KEY (id)
+ movies                     | FK   | FOREIGN KEY (collection_id) REFERENCES mart.collections(id) ON DELETE SET NULL
+ movie_genres               | PK   | PRIMARY KEY (movie_id, genre_id)
+ movie_genres               | FK   | FOREIGN KEY (genre_id) REFERENCES mart.genres(id) ON DELETE CASCADE
+ movie_genres               | FK   | FOREIGN KEY (movie_id) REFERENCES mart.movies(id) ON DELETE CASCADE
+ movie_production_companies | PK   | PRIMARY KEY (movie_id, company_id)
+ movie_production_companies | FK   | FOREIGN KEY (company_id) REFERENCES mart.production_companies(id) ON DELETE CASCADE
+ movie_production_companies | FK   | FOREIGN KEY (movie_id) REFERENCES mart.movies(id) ON DELETE CASCADE
+ movie_production_countries | PK   | PRIMARY KEY (movie_id, country_id)
+ movie_production_countries | FK   | FOREIGN KEY (country_id) REFERENCES mart.countries(iso_3166_1) ON DELETE CASCADE
+ movie_production_countries | FK   | FOREIGN KEY (movie_id) REFERENCES mart.movies(id) ON DELETE CASCADE
+ movie_spoken_languages     | PK   | PRIMARY KEY (movie_id, language_id)
+ movie_spoken_languages     | FK   | FOREIGN KEY (language_id) REFERENCES mart.languages(iso_639_1) ON DELETE CASCADE
+ movie_spoken_languages     | FK   | FOREIGN KEY (movie_id) REFERENCES mart.movies(id) ON DELETE CASCADE
+ movie_cast                 | PK   | PRIMARY KEY (credit_id)
+ movie_cast                 | FK   | FOREIGN KEY (movie_id) REFERENCES mart.movies(id) ON DELETE CASCADE
+ movie_cast                 | FK   | FOREIGN KEY (person_id) REFERENCES mart.people(id) ON DELETE CASCADE
+ movie_crew                 | PK   | PRIMARY KEY (credit_id)
+ movie_crew                 | FK   | FOREIGN KEY (movie_id) REFERENCES mart.movies(id) ON DELETE CASCADE
+ movie_crew                 | FK   | FOREIGN KEY (person_id) REFERENCES mart.people(id) ON DELETE CASCADE
+(26 rows)
+
+=== 6. Relations du MLD : présentes dans chaque schéma ?
+                      relation                      | tp1_public | tp2_mart | tp3_curated 
+----------------------------------------------------+------------+----------+-------------
+ movie_cast -> movies                               | t          | t        | t
+ movie_cast -> people                               | t          | t        | t
+ movie_crew -> movies                               | t          | t        | t
+ movie_crew -> people                               | t          | t        | t
+ movie_genres -> genres                             | t          | t        | t
+ movie_genres -> movies                             | t          | t        | t
+ movie_production_companies -> movies               | t          | t        | t
+ movie_production_companies -> production_companies | t          | t        | t
+ movie_production_countries -> countries            | t          | t        | t
+ movie_production_countries -> movies               | t          | t        | t
+ movie_spoken_languages -> languages                | t          | t        | t
+ movie_spoken_languages -> movies                   | t          | t        | t
+ movies -> collections                              | t          | t        | t
+(13 rows)
+
+=== 7. Contraintes du schéma cible (curated) par type
+  type  | curated | mart 
+--------+---------+------
+ CHECK  |      65 |    0
+ FK     |      13 |   13
+ PK     |      13 |   13
+ UNIQUE |       3 |    0
+(4 rows)
+
+=== 8. Attributs volontairement non reliés au TP1 : couverture par le référentiel
+                     attribut                     | renseignes | dans_referentiel 
+--------------------------------------------------+------------+------------------
+ movies.original_language -> languages            |        619 |              619
+ production_companies.origin_country -> countries |       1310 |             1309
+(2 rows)
+
+=== 9. Rapprochement TMDB x IMDb : couverture de la source 2
+ films | avec_imdb_id | avec_note_imdb | avec_title_basics | couverture_pct 
+-------+--------------+----------------+-------------------+----------------
+   619 |          602 |            555 |               579 |           89.7
+(1 row)
+

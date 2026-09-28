@@ -1,0 +1,50 @@
+control_id,dimension,table_name,column_name,rule,severity,threshold,treatment,checked_before,anomalies_before,pct_before,checked_after,anomalies_after,pct_after,priority,verdict
+COH-01,cohérence,movies,"vote_average, vote_count",Pas de note TMDB sans vote,majeure,0.0000,substitution,619,74,11.95,619,0,0.00,35.86,corrigé
+COH-02,cohérence,movies,has_imdb_match,Indicateur de rapprochement conforme aux données IMDb présentes,critique,0.0000,correction,619,0,0.00,619,0,0.00,0.00,conforme
+COH-03,cohérence,movies,rating_gap,Écart de notation = note TMDB − note IMDb,majeure,0.0000,correction,619,10,1.62,619,0,0.00,4.85,corrigé
+COH-04,cohérence,movies,votes_ratio,Rapport des votes = votes TMDB / votes IMDb,mineure,0.0000,correction,619,0,0.00,619,0,0.00,0.00,conforme
+COH-05,cohérence,movies,"status, release_date",Un film « Released » a une date de sortie passée,majeure,0.0000,conservation,586,29,4.95,586,29,4.95,14.85,résiduel accepté
+COH-06,cohérence,movies,"status, revenue",Pas de recettes pour un film non sorti,mineure,0.0000,conservation,33,0,0.00,33,0,0.00,0.00,conforme
+COH-07,cohérence,movies,"runtime, imdb_runtime_minutes",Durées TMDB et IMDb proches (écart de 30 minutes au plus),mineure,0.0500,conservation,561,2,0.36,569,2,0.35,0.71,résiduel accepté
+COH-08,cohérence,movies,"release_date, imdb_start_year",Années de sortie TMDB et IMDb proches (1 an d'écart au plus),mineure,0.0500,conservation,579,2,0.35,579,2,0.35,0.69,résiduel accepté
+COH-09,cohérence,liaisons,,Les liaisons d'un film reflètent son dernier état connu,majeure,0.0000,suppression,88879,12,0.01,88866,0,0.00,0.04,corrigé
+COH-10,cohérence,movies,"source_fetched_at, loaded_at, ingest_date","Chronologie de traçabilité : collecte, puis agrégation, puis chargement",mineure,0.0000,conservation,619,0,0.00,619,0,0.00,0.00,conforme
+COM-01,complétude,movies,imdb_id,Identifiant IMDb renseigné,majeure,0.0500,conservation,619,17,2.75,619,17,2.75,8.24,résiduel accepté
+COM-02,complétude,movies,release_date,Date de sortie renseignée,majeure,0.0500,conservation,619,1,0.16,619,1,0.16,0.48,résiduel accepté
+COM-03,complétude,movies,runtime,Durée renseignée,mineure,0.0500,imputation,619,23,3.72,619,15,2.42,7.43,résiduel accepté
+COM-04,complétude,movies,overview,Synopsis renseigné,mineure,0.1000,conservation,619,106,17.12,619,106,17.12,34.25,résiduel accepté
+COM-05,complétude,movies,"budget, revenue",Budget et recettes connus,info,1.0000,conservation,619,301,48.63,619,302,48.79,48.63,résiduel accepté
+COM-06,complétude,movie_genres,,Tout film a au moins un genre,mineure,0.0200,conservation,619,3,0.48,619,3,0.48,0.97,résiduel accepté
+COM-07,complétude,movie_cast,,Tout film a un casting,mineure,0.0500,conservation,619,2,0.32,619,2,0.32,0.65,résiduel accepté
+COM-08,complétude,movie_crew,job,Tout film a un réalisateur,mineure,0.0500,conservation,619,2,0.32,619,2,0.32,0.65,résiduel accepté
+COM-09,complétude,people,gender,Genre de la personne connu,info,1.0000,conservation,62270,27589,44.31,62267,27586,44.30,44.31,résiduel accepté
+COM-10,complétude,production_companies,origin_country,Pays d'origine de la société connu,info,1.0000,conservation,1437,127,8.84,1437,127,8.84,8.84,résiduel accepté
+COM-11,complétude,movies,imdb_average_rating,Film doté d'un identifiant IMDb rapproché d'une note IMDb,majeure,0.0500,conservation,602,47,7.81,602,47,7.81,23.42,résiduel accepté
+INT-01,intégrité,liaisons,clés étrangères,Toute liaison pointe vers un film et un élément existants,critique,0.0000,suppression,88879,0,0.00,88866,0,0.00,0.00,conforme
+INT-02,intégrité,movies,collection_id,Toute saga référencée existe,critique,0.0000,substitution,169,0,0.00,169,0,0.00,0.00,conforme
+INT-03,intégrité,"genres, collections, production_companies, countries, languages",,Tout élément de référentiel est relié à au moins un film,mineure,0.0000,suppression,1712,1,0.06,1711,0,0.00,0.12,corrigé
+INT-04,intégrité,people,,Toute personne a au moins un crédit,mineure,0.0000,suppression,62270,0,0.00,62267,0,0.00,0.00,conforme
+INT-05,intégrité,movies,original_language,Langue originale présente dans le référentiel des langues,info,1.0000,conservation,619,0,0.00,619,0,0.00,0.00,conforme
+INT-06,intégrité,production_companies,origin_country,Pays d'origine des sociétés présent dans le référentiel des pays,info,1.0000,conservation,1310,1,0.08,1310,1,0.08,0.08,résiduel accepté
+UNI-01,unicité,movies,id,Identifiant TMDB unique,critique,0.0000,suppression,619,0,0.00,619,0,0.00,0.00,conforme
+UNI-02,unicité,movies,imdb_id,Un identifiant IMDb ne désigne qu'un film TMDB,critique,0.0000,correction,602,0,0.00,602,0,0.00,0.00,conforme
+UNI-03,unicité,movies,"original_title, release_date",Pas deux fiches pour un même film (titre original et année identiques),majeure,0.0000,conservation,618,0,0.00,618,0,0.00,0.00,conforme
+UNI-04,unicité,movie_cast,"movie_id, person_id, character",Un rôle n'est crédité qu'une fois,mineure,0.0000,suppression,23061,1,0.00,23054,0,0.00,0.01,corrigé
+UNI-05,unicité,movie_crew,"movie_id, person_id, job",Un poste n'est crédité qu'une fois,mineure,0.0000,suppression,60340,1,0.00,60336,0,0.00,0.00,corrigé
+UNI-06,unicité,"genres, collections, production_companies",name,Pas deux entrées de référentiel de même nom,info,1.0000,conservation,1588,8,0.50,1587,8,0.50,0.50,résiduel accepté
+VAL-01,validité,movies,imdb_id,Identifiant IMDb au format tt + 7 chiffres ou plus,majeure,0.0000,substitution,602,0,0.00,602,0,0.00,0.00,conforme
+VAL-02,validité,movies,vote_average,Note TMDB comprise entre 0 et 10,critique,0.0000,substitution,619,0,0.00,545,0,0.00,0.00,conforme
+VAL-03,validité,movies,imdb_average_rating,Note IMDb comprise entre 1 et 10,critique,0.0000,substitution,555,0,0.00,555,0,0.00,0.00,conforme
+VAL-04,validité,movies,"vote_count, imdb_num_votes",Nombres de votes positifs ou nuls,critique,0.0000,substitution,619,0,0.00,619,0,0.00,0.00,conforme
+VAL-05,validité,movies,runtime,Durée plausible (1 à 600 minutes),majeure,0.0000,substitution,596,0,0.00,604,0,0.00,0.00,conforme
+VAL-06,validité,movies,release_date,Date de sortie plausible (1888 à aujourd'hui + 5 ans),majeure,0.0000,substitution,618,0,0.00,618,0,0.00,0.00,conforme
+VAL-07,validité,movies,status,Statut dans le domaine TMDB,majeure,0.0000,substitution,619,0,0.00,619,0,0.00,0.00,conforme
+VAL-08,validité,"movies, languages, movie_spoken_languages",codes langue,Codes langue au format ISO 639-1 (2 lettres minuscules),mineure,0.0000,substitution,1571,0,0.00,1570,0,0.00,0.00,conforme
+VAL-09,validité,"countries, movie_production_countries, production_companies",codes pays,Codes pays au format ISO 3166-1 alpha-2 (2 lettres majuscules),majeure,0.0000,substitution,2409,127,5.27,2282,0,0.00,15.82,corrigé
+VAL-10,validité,movies,"budget, revenue",Montants plausibles (au moins 1 000 USD),majeure,0.0000,substitution,403,1,0.25,402,0,0.00,0.74,corrigé
+VAL-11,validité,movies,homepage,Site officiel au format URL http(s),mineure,0.0000,substitution,136,0,0.00,136,0,0.00,0.00,conforme
+VAL-12,validité,"movies, collections, production_companies, people",chemins d'image,Chemins d'image au format TMDB (/<nom>.<jpg|png|svg>),mineure,0.0000,substitution,21998,0,0.00,21996,0,0.00,0.00,conforme
+VAL-13,validité,people,gender,"Genre dans le domaine 1, 2, 3 (0 est une valeur sentinelle)",mineure,0.0000,substitution,62270,27589,44.31,34681,0,0.00,88.61,corrigé
+VAL-14,validité,"movies, people, movie_cast","popularity, cast_order",Popularité et rang au générique positifs ou nuls,mineure,0.0000,substitution,85950,0,0.00,85940,0,0.00,0.00,conforme
+VAL-15,validité,"movie_crew, people","department, known_for_department",Département dans la liste TMDB,mineure,0.0000,substitution,122610,0,0.00,122603,0,0.00,0.00,conforme
+VAL-16,validité,(toutes),(colonnes texte),Texte sans chaîne vide ni espace parasite,mineure,0.0000,correction,445112,875,0.20,444199,0,0.00,0.39,corrigé

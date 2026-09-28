@@ -1,0 +1,154 @@
+=== 1. Taux de remplissage des colonnes de mart.movies
+       colonne        | renseignees | chaines_vides | pct_utile 
+----------------------+-------------+---------------+-----------
+ homepage             |         136 |             0 |      22.0
+ collection_id        |         169 |             0 |      27.3
+ tagline              |         301 |             0 |      48.6
+ budget               |         341 |             0 |      55.1
+ revenue              |         380 |             0 |      61.4
+ overview             |         513 |             0 |      82.9
+ imdb_average_rating  |         555 |             0 |      89.7
+ imdb_num_votes       |         555 |             0 |      89.7
+ rating_gap           |         555 |             0 |      89.7
+ votes_ratio          |         555 |             0 |      89.7
+ imdb_runtime_minutes |         569 |             0 |      91.9
+ imdb_start_year      |         579 |             0 |      93.5
+ imdb_genres          |         580 |             0 |      93.7
+ runtime              |         596 |             0 |      96.3
+ imdb_id              |         602 |             0 |      97.3
+ backdrop_path        |         606 |             0 |      97.9
+ poster_path          |         616 |             0 |      99.5
+ release_date         |         618 |             0 |      99.8
+ adult                |         619 |             0 |     100.0
+ has_imdb_match       |         619 |             0 |     100.0
+ id                   |         619 |             0 |     100.0
+ ingest_date          |         619 |             0 |     100.0
+ loaded_at            |         619 |             0 |     100.0
+ original_language    |         619 |             0 |     100.0
+ original_title       |         619 |             0 |     100.0
+ popularity           |         619 |             0 |     100.0
+ source_fetched_at    |         619 |             0 |     100.0
+ status               |         619 |             0 |     100.0
+ title                |         619 |             0 |     100.0
+ vote_average         |         619 |             0 |     100.0
+ vote_count           |         619 |             0 |     100.0
+(31 rows)
+
+=== 2. Taux de remplissage des colonnes de mart.people
+       colonne        | renseignees | chaines_vides | pct_utile 
+----------------------+-------------+---------------+-----------
+ profile_path         |       19623 |             0 |      31.5
+ gender               |       62270 |             0 |     100.0
+ id                   |       62270 |             0 |     100.0
+ known_for_department |       62270 |             0 |     100.0
+ name                 |       62270 |             0 |     100.0
+ original_name        |       62270 |             0 |     100.0
+ popularity           |       62270 |             0 |     100.0
+(7 rows)
+
+=== 3. Statut de production
+     status      | films | date_future | sans_vote 
+-----------------+-------+-------------+-----------
+ Released        |   586 |          29 |        41
+ Post Production |    26 |          26 |        26
+ In Production   |     6 |           6 |         6
+ Planned         |     1 |           1 |         1
+(4 rows)
+
+=== 4. Distributions numériques des films
+        mesure        |  n  | min  | mediane  |    max     
+----------------------+-----+------+----------+------------
+ runtime (min)        | 596 |    5 |      110 |        275
+ vote_average         | 619 | 0.00 |     7.54 |      10.00
+ vote_count           | 619 |    0 |      544 |      41294
+ imdb_average_rating  | 555 |  2.5 |      7.3 |        9.3
+ budget (USD)         | 341 |    7 | 25000000 |  460000000
+ revenue (USD)        | 380 |    7 | 50312025 | 2923706026
+ release_date (année) | 618 | 1921 |     2025 |       2026
+(7 rows)
+
+=== 5. Plus petits budgets et recettes : valeurs symboliques ?
+   id    |             title             | budget | revenue | vote_count 
+---------+-------------------------------+--------+---------+------------
+ 1007757 | Aventures croisées            |      7 |       7 |       2209
+ 1768117 | Dust                          |  10000 |         |          0
+ 1757312 | El Desencanto                 |  22500 |         |          0
+ 1193824 | Rabbit Trap                   |        |   32817 |         44
+    1483 | Begotten                      |  33000 |         |        377
+   29259 | Le Trou                       |        |   33187 |        601
+    3782 | Vivre                         |  85000 |   55240 |       1398
+ 1422011 | It Ends                       |  80000 | 1139411 |         51
+ 1130948 | Rosebush Pruning              |        |   85294 |         56
+     823 | Jin-Roh, la brigade des loups |        |   94072 |        594
+(10 rows)
+
+=== 6. Notes TMDB : la valeur 0 correspond-elle à une absence de vote ?
+       votes       | films | note_zero | note_moyenne 
+-------------------+-------+-----------+--------------
+ aucun vote        |    74 |        74 |         0.00
+ 1 à 9 votes       |    40 |         0 |         6.66
+ 10 à 99 votes     |   112 |         0 |         6.57
+ 100 votes et plus |   393 |         0 |         7.79
+(4 rows)
+
+=== 7. Langues originales (top 10) et codes hors référentiel
+ original_language | films | dans_referentiel 
+-------------------+-------+------------------
+ en                |   383 | t
+ ja                |    60 | t
+ es                |    27 | t
+ fr                |    25 | t
+ zh                |    17 | t
+ it                |    15 | t
+ ko                |    15 | t
+ pt                |     9 | t
+ hi                |     8 | t
+ ru                |     6 | t
+(10 rows)
+
+=== 8. Personnes : genre et département principal
+ gender |    libelle    | personnes | pct  
+--------+---------------+-----------+------
+      0 | non renseigné |     27589 | 44.3
+      1 | femme         |     10766 | 17.3
+      2 | homme         |     23866 | 38.3
+      3 | non-binaire   |        49 |  0.1
+(4 rows)
+
+ known_for_department | personnes 
+----------------------+-----------
+ Acting               |     20120
+ Visual Effects       |      7632
+ Production           |      6275
+ Crew                 |      6092
+ Art                  |      4954
+ Sound                |      4041
+ Costume & Make-Up    |      3251
+ Camera               |      3044
+ Directing            |      2666
+ Editing              |      1519
+ Lighting             |      1348
+ Writing              |      1311
+ Creator              |        17
+(13 rows)
+
+=== 9. Cardinalités observées des relations (par film)
+     relation     | min | moyenne | max 
+------------------+-----+---------+-----
+ langues parlées  |   0 |     1.4 |   7
+ pays             |   0 |     1.5 |   7
+ genres           |   0 |     2.5 |   6
+ sociétés         |   0 |     3.4 |  23
+ casting          |   0 |    37.3 | 202
+ équipe technique |   0 |    97.5 | 999
+(6 rows)
+
+=== 10. Chaînes mal formées par colonne (contrôle VAL-16)
+      table_name      |  column_name   | valeurs |      exemple       
+----------------------+----------------+---------+--------------------
+ movie_cast           | character      |     736 | ''
+ production_companies | origin_country |     127 | ''
+ languages            | name           |      11 | ''
+ people               | original_name  |       1 | 'Laura Marolakos '
+(4 rows)
+

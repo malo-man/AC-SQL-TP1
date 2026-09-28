@@ -1,0 +1,11 @@
+indicator,mart,curated,delta
+films,619,619,0
+films notés TMDB,619,545,-74
+note TMDB moyenne,6.565,7.457,0.892
+note IMDb moyenne,7.062,7.062,0.000
+écart TMDB - IMDb moyen,0.187,0.400,0.213
+couverture IMDb (%),89.66,89.66,0.00
+films avec durée,596,604,8
+films avec budget,341,340,-1
+budget moyen (USD),59885267,60061400,176133
+films datés,618,618,0

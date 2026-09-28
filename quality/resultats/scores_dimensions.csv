@@ -1,0 +1,13 @@
+dimension,phase,controls,controls_passed,anomalies,score
+cohérence,avant,10,6,129,98.08
+complétude,avant,11,9,28218,87.78
+intégrité,avant,6,5,2,99.98
+unicité,avant,6,4,10,99.92
+validité,avant,16,12,28592,96.87
+global,avant,49,36,56951,95.83
+cohérence,après,10,9,33,99.44
+complétude,après,11,9,28208,87.88
+intégrité,après,6,6,1,99.99
+unicité,après,6,6,8,99.92
+validité,après,16,16,0,100.00
+global,après,49,46,28250,97.15
