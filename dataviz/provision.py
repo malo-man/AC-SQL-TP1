@@ -6,7 +6,8 @@ pour que « docker compose up -d » suffise vraiment et que le dashboard soit
 versionné dans le dépôt plutôt que piégé dans un volume.
 
 Il est idempotent : chaque objet est recherché par son nom avant d'être créé,
-donc un second passage met à jour au lieu de dupliquer.
+donc un second passage met à jour au lieu de dupliquer. Les noms de questions
+sont donc uniques sur l'ensemble des dashboards.
 
 Lancement : `python provision.py`.
 """
@@ -20,7 +21,7 @@ from typing import Any
 
 import httpx
 
-from questions import DASHBOARD_DESCRIPTION, DASHBOARD_NAME, DATABASE_NAME, QUESTIONS
+from questions import DASHBOARDS, DATABASE_NAME
 
 log = logging.getLogger("metabase-init")
 
@@ -158,12 +159,14 @@ def ensure_database(client: httpx.Client, settings: Settings) -> int:
     return database_id
 
 
-def ensure_cards(client: httpx.Client, database_id: int) -> list[tuple[int, dict]]:
+def ensure_cards(
+    client: httpx.Client, database_id: int, questions: list[dict]
+) -> list[tuple[int, dict]]:
     """Crée ou met à jour chaque question, et renvoie leurs identifiants."""
     existing = {card["name"]: card["id"] for card in client.get("/api/card").json()}
     cards: list[tuple[int, dict]] = []
 
-    for question in QUESTIONS:
+    for question in questions:
         payload = {
             "name": question["name"],
             "description": question["description"],
@@ -189,14 +192,15 @@ def ensure_cards(client: httpx.Client, database_id: int) -> list[tuple[int, dict
     return cards
 
 
-def ensure_dashboard(client: httpx.Client, cards: list[tuple[int, dict]]) -> int:
+def ensure_dashboard(client: httpx.Client, dashboard: dict, cards: list[tuple[int, dict]]) -> int:
     """Crée le dashboard et y dispose les questions selon leur position déclarée."""
     existing = client.get("/api/dashboard").json()
-    dashboard_id = next((d["id"] for d in existing if d["name"] == DASHBOARD_NAME), None)
+    dashboard_id = next((d["id"] for d in existing if d["name"] == dashboard["name"]), None)
 
     if dashboard_id is None:
         response = client.post(
-            "/api/dashboard", json={"name": DASHBOARD_NAME, "description": DASHBOARD_DESCRIPTION}
+            "/api/dashboard",
+            json={"name": dashboard["name"], "description": dashboard["description"]},
         )
         response.raise_for_status()
         dashboard_id = response.json()["id"]
@@ -230,15 +234,15 @@ def main() -> int:
         wait_until_ready(client, settings.boot_timeout)
         authenticate(client, settings)
         database_id = ensure_database(client, settings)
-        cards = ensure_cards(client, database_id)
-        dashboard_id = ensure_dashboard(client, cards)
-
-    log.info(
-        "Dashboard « %s » disponible : %s/dashboard/%s",
-        DASHBOARD_NAME,
-        os.getenv("METABASE_PUBLIC_URL", "http://localhost:3001"),
-        dashboard_id,
-    )
+        for dashboard in DASHBOARDS:
+            cards = ensure_cards(client, database_id, dashboard["questions"])
+            dashboard_id = ensure_dashboard(client, dashboard, cards)
+            log.info(
+                "Dashboard « %s » disponible : %s/dashboard/%s",
+                dashboard["name"],
+                os.getenv("METABASE_PUBLIC_URL", "http://localhost:3001"),
+                dashboard_id,
+            )
     return 0
 
 
